@@ -31,7 +31,7 @@ export function ChatMessage({ role, content }: ChatMessageProps) {
       >
         <div
           className={cn(
-            "prose prose-sm dark:prose-invert max-w-none",
+            "prose dark:prose-invert max-w-none",
             isUser &&
               "inline-block rounded-lg bg-primary dark:bg-zinc-800 px-3 py-2 text-primary-foreground dark:text-foreground text-left prose-p:text-primary-foreground dark:prose-p:text-foreground prose-strong:text-primary-foreground dark:prose-strong:text-foreground"
           )}
