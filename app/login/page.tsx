@@ -48,12 +48,12 @@ function LoginContent() {
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <Card className="w-full max-w-sm">
         <CardHeader className="text-center">
-          <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center">
+          <div className="mx-auto mb-2 flex items-center justify-center gap-2">
             <Logo size={32} />
+            <CardTitle className="text-xl">Sidebar</CardTitle>
           </div>
-          <CardTitle className="text-xl">Sidebar</CardTitle>
           <p className="text-sm text-muted-foreground">
-            Your personal leadership coach
+            Your personal AI advisor
           </p>
         </CardHeader>
         <CardContent>
