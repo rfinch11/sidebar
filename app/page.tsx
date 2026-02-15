@@ -6,7 +6,7 @@ import { ChatMessage } from "@/components/chat-message";
 import { ChatInput } from "@/components/chat-input";
 import { ChatHistory } from "@/components/chat-history";
 import { createClient } from "@/lib/supabase/client";
-import { ArrowDown } from "lucide-react";
+import { ArrowDown, ArrowUp } from "lucide-react";
 import { Logo } from "@/components/logo";
 import { Button } from "@/components/ui/button";
 import { ProfileMenu } from "@/components/profile-menu";
@@ -28,7 +28,12 @@ function getInitialChatId(): string {
 export default function Home() {
   const [activeChatId, setActiveChatId] = useState(getInitialChatId);
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [pendingLoadId, setPendingLoadId] = useState<string | null>(null);
+  const [pendingLoadId, setPendingLoadId] = useState<string | null>(() => {
+    if (typeof window !== "undefined") {
+      return sessionStorage.getItem("activeChatId");
+    }
+    return null;
+  });
   const [userInitials, setUserInitials] = useState("");
 
   const { messages, sendMessage, setMessages, status } = useChat({
@@ -46,14 +51,6 @@ export default function Home() {
   useEffect(() => {
     sessionStorage.setItem("activeChatId", activeChatId);
   }, [activeChatId]);
-
-  // Load conversation on mount
-  useEffect(() => {
-    const savedId = sessionStorage.getItem("activeChatId");
-    if (savedId) {
-      setPendingLoadId(savedId);
-    }
-  }, []);
 
   // Fetch user initials via auth state listener (fires once session is ready)
   useEffect(() => {
@@ -116,7 +113,10 @@ export default function Home() {
     const sentinel = bottomRef.current;
     if (!sentinel) return;
     const observer = new IntersectionObserver(
-      ([entry]) => setIsAtBottom(entry.isIntersecting),
+      ([entry]) => {
+        setIsAtBottom(entry.isIntersecting);
+        if (entry.isIntersecting) setStepIndex(-1);
+      },
       { root: scrollRef.current, threshold: 0 }
     );
     observer.observe(sentinel);
@@ -128,8 +128,46 @@ export default function Home() {
     bottomRef.current?.scrollIntoView({ block: "end" });
   }, [messages]);
 
+  const [stepIndex, setStepIndex] = useState(-1);
+
+  const getUserMessageElements = () =>
+    Array.from(scrollRef.current?.querySelectorAll<HTMLElement>("[data-user-msg]") ?? []);
+
   const scrollToBottom = () => {
+    setStepIndex(-1);
     bottomRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+  };
+
+  const stepUp = () => {
+    const els = getUserMessageElements();
+    if (els.length === 0) return;
+    // If we haven't started stepping, start from the last user message
+    if (stepIndex < 0) {
+      const idx = els.length - 1;
+      setStepIndex(idx);
+      els[idx]?.scrollIntoView({ behavior: "smooth", block: "start" });
+    } else if (stepIndex > 0) {
+      const idx = stepIndex - 1;
+      setStepIndex(idx);
+      els[idx]?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  };
+
+  const stepDown = () => {
+    const els = getUserMessageElements();
+    if (els.length === 0 || stepIndex < 0) {
+      scrollToBottom();
+      return;
+    }
+    if (stepIndex < els.length - 1) {
+      const idx = stepIndex + 1;
+      setStepIndex(idx);
+      els[idx]?.scrollIntoView({ behavior: "smooth", block: "start" });
+    } else {
+      // Already at last user message, scroll to bottom
+      setStepIndex(-1);
+      bottomRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+    }
   };
 
   const onSubmit = () => {
@@ -183,11 +221,12 @@ export default function Home() {
             </div>
           ) : (
             <div className="py-4">
-              {messages.map((message) => (
+              {messages.map((message, i) => (
                 <ChatMessage
                   key={message.id}
                   role={message.role as "user" | "assistant"}
                   content={getMessageText(message)}
+                  messageIndex={message.role === "user" ? messages.slice(0, i).filter(m => m.role === "user").length : undefined}
                 />
               ))}
               {status === "submitted" && (
@@ -200,18 +239,27 @@ export default function Home() {
       </div>
 
       {/* Input */}
-      <div className="z-10 bg-background">
-        {/* Scroll to bottom FAB */}
+      <div className="z-10 bg-background relative">
+        <div className="pointer-events-none absolute inset-x-0 bottom-full h-16 bg-gradient-to-t from-background to-transparent" />
+        {/* Chat steppers */}
         {!isAtBottom && messages.length > 0 && (
-          <div className="flex justify-center -mt-4 mb-1">
-            <Button
-              variant="outline"
-              size="icon"
-              className="h-10 w-10 rounded-full shadow-md !bg-background border-border hover:!bg-accent hover:text-accent-foreground transition-colors"
-              onClick={scrollToBottom}
-            >
-              <ArrowDown className="h-4 w-4" />
-            </Button>
+          <div className="relative z-10 flex justify-center -mt-4 mb-1">
+            <div className="flex items-center rounded-md border border-border shadow-md bg-background p-1 gap-1">
+              <button
+                className="h-8 w-8 flex items-center justify-center rounded hover:bg-accent hover:text-accent-foreground transition-colors disabled:opacity-30 disabled:pointer-events-none"
+                onClick={stepUp}
+                disabled={stepIndex === 0}
+              >
+                <ArrowUp className="h-4 w-4" />
+              </button>
+              <div className="w-px h-4 bg-border" />
+              <button
+                className="h-8 w-8 flex items-center justify-center rounded hover:bg-accent hover:text-accent-foreground transition-colors"
+                onClick={stepDown}
+              >
+                <ArrowDown className="h-4 w-4" />
+              </button>
+            </div>
           </div>
         )}
         <div className="mx-auto max-w-3xl px-4 sm:px-6 py-3 sm:py-4 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
