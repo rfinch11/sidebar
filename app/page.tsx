@@ -151,14 +151,14 @@ export default function Home() {
   }, []);
 
   return (
-    <div className="relative flex h-screen flex-col bg-background">
+    <div className="relative flex h-dvh flex-col bg-background">
       {/* Header */}
-      <header className="flex items-center justify-between px-6 py-4">
+      <header className="flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4 pt-[max(0.75rem,env(safe-area-inset-top))]">
         <div className="flex items-center gap-2">
           <Button
             variant="ghost"
             size="icon"
-            className="h-8 w-8"
+            className="h-10 w-10"
             onClick={() => setSidebarOpen(true)}
           >
             <Logo size={20} />
@@ -170,9 +170,9 @@ export default function Home() {
 
       {/* Messages */}
       <div ref={scrollRef} className="flex-1 overflow-y-auto">
-        <div className="mx-auto max-w-3xl px-6">
+        <div className="mx-auto max-w-3xl px-4 sm:px-6">
           {messages.length === 0 ? (
-            <div className="flex h-[calc(100vh-10rem)] flex-col items-center justify-center text-center">
+            <div className="flex h-full min-h-[60dvh] flex-col items-center justify-center text-center">
               <div className="mb-4 flex items-center gap-2">
                 <Logo size={40} />
                 <h2 className="text-xl font-semibold">Sidebar</h2>
@@ -207,14 +207,14 @@ export default function Home() {
             <Button
               variant="outline"
               size="icon"
-              className="h-8 w-8 rounded-full shadow-md !bg-background border-border hover:!bg-accent hover:text-accent-foreground transition-colors"
+              className="h-10 w-10 rounded-full shadow-md !bg-background border-border hover:!bg-accent hover:text-accent-foreground transition-colors"
               onClick={scrollToBottom}
             >
               <ArrowDown className="h-4 w-4" />
             </Button>
           </div>
         )}
-        <div className="mx-auto max-w-3xl px-6 py-4">
+        <div className="mx-auto max-w-3xl px-4 sm:px-6 py-3 sm:py-4 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
           <ChatInput
             value={input}
             onChange={setInput}

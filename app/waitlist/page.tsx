@@ -17,7 +17,7 @@ export default function WaitlistPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4">
+    <div className="flex min-h-dvh items-center justify-center bg-background px-4">
       <Card className="w-full max-w-sm text-center">
         <CardHeader>
           <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center">

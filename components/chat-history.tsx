@@ -70,13 +70,13 @@ export function ChatHistory({
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="left" className="w-80 p-0 flex flex-col !gap-0 rounded-r-xl" showCloseButton={false}>
-        <SheetHeader className="p-4 pb-4 flex-row items-center justify-between">
+      <SheetContent side="left" className="w-full sm:w-80 p-0 flex flex-col !gap-0 rounded-r-xl" showCloseButton={false}>
+        <SheetHeader className="p-4 pb-4 pt-[max(1rem,env(safe-area-inset-top))] flex-row items-center justify-between">
           <SheetTitle>History</SheetTitle>
           <Button
             variant="ghost"
             size="icon"
-            className="h-8 w-8"
+            className="h-10 w-10"
             onClick={() => onOpenChange(false)}
           >
             <ChevronLeft className="h-4 w-4" />

@@ -133,7 +133,7 @@ export default function IngestPage() {
   };
 
   return (
-    <div className="mx-auto max-w-2xl px-6 py-8">
+    <div className="mx-auto max-w-2xl px-4 sm:px-6 py-6 sm:py-8">
       <div className="mb-6 flex items-center gap-3">
         <Link href="/">
           <Button variant="ghost" size="icon">

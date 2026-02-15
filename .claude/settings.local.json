@@ -34,7 +34,8 @@
       "Bash(git commit:*)",
       "Bash(vercel whoami:*)",
       "Bash(vercel:*)",
-      "Bash(dig:*)"
+      "Bash(dig:*)",
+      "Bash(grep:*)"
     ]
   }
 }
