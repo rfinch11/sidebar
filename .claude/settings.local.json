@@ -1,0 +1,37 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cursor --install-extension:*)",
+      "Bash(/Applications/Cursor.app/Contents/Resources/app/bin/cursor:*)",
+      "Bash(open:*)",
+      "Bash(ls:*)",
+      "Bash(npx shadcn@latest init:*)",
+      "Bash(npx shadcn@latest add:*)",
+      "Bash(npx next build:*)",
+      "Bash(npm install:*)",
+      "Bash(npx tsc:*)",
+      "Bash(pkill:*)",
+      "Bash(lsof:*)",
+      "Bash(xargs kill:*)",
+      "Bash(curl:*)",
+      "Bash(python3:*)",
+      "Bash(SB_KEY=\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh5ZHh6eWhxaHRsdXhzaG5ldmt4Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3MTExMjE2OCwiZXhwIjoyMDg2Njg4MTY4fQ.oc1SwEF7Hizwf3jiJo584fQkXSM56sipCOcXPbGC0oE\":*)",
+      "Bash(node -e \"\nconst { createClient } = require\\(''@supabase/supabase-js''\\);\nconst sb = createClient\\(\n  ''https://hydxzyhqhtluxshnevkx.supabase.co'',\n  ''eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh5ZHh6eWhxaHRsdXhzaG5ldmt4Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3MTExMjE2OCwiZXhwIjoyMDg2Njg4MTY4fQ.oc1SwEF7Hizwf3jiJo584fQkXSM56sipCOcXPbGC0oE''\n\\);\n\\(async \\(\\) => {\n  const { data: sources, error: sErr } = await sb.from\\(''sources''\\).select\\(''id, url, title, author, category, created_at''\\).order\\(''created_at'', { ascending: false }\\).limit\\(20\\);\n  if \\(sErr\\) { console.log\\(''Sources error:'', sErr\\); return; }\n  console.log\\(''Sources:'', sources.length\\);\n  sources.forEach\\(s => console.log\\('' -'', s.title || s.url, ''|'', s.category || ''uncategorized''\\)\\);\n\n  const { count, error: cErr } = await sb.from\\(''chunks''\\).select\\(''id'', { count: ''exact'', head: true }\\);\n  if \\(cErr\\) { console.log\\(''Chunks error:'', cErr\\); return; }\n  console.log\\(''Total chunks:'', count\\);\n}\\)\\(\\);\n\")",
+      "Bash(node -e \"\nconst { createClient } = require\\(''@supabase/supabase-js''\\);\nconst sb = createClient\\(\n  ''https://hydxzyhqhtluxshnevkx.supabase.co'',\n  ''eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh5ZHh6eWhxaHRsdXhzaG5ldmt4Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3MTExMjE2OCwiZXhwIjoyMDg2Njg4MTY4fQ.oc1SwEF7Hizwf3jiJo584fQkXSM56sipCOcXPbGC0oE''\n\\);\n\\(async \\(\\) => {\n  const { count: sourceCount } = await sb.from\\(''sources''\\).select\\(''id'', { count: ''exact'', head: true }\\);\n  const { count: chunkCount } = await sb.from\\(''chunks''\\).select\\(''id'', { count: ''exact'', head: true }\\);\n  console.log\\(''Total sources:'', sourceCount\\);\n  console.log\\(''Total chunks:'', chunkCount\\);\n}\\)\\(\\);\n\")",
+      "Bash(npx tsx:*)",
+      "Bash(npx dotenv:*)",
+      "Bash(set:*)",
+      "Bash(source:*)",
+      "Bash(node -e:*)",
+      "Bash(npx next dev:*)",
+      "Bash(find:*)",
+      "Bash(xargs:*)",
+      "Bash(node test-rag.mjs:*)",
+      "Bash(npx supabase:*)",
+      "Bash(vercel --version:*)",
+      "Bash(git init:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)"
+    ]
+  }
+}
