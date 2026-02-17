@@ -27,8 +27,41 @@ When relevant context IS provided, do both of the following:
 
 **Follow-ups**: End every response with 2-3 short suggested follow-up questions the user could ask to go deeper, formatted as a bulleted list under a "**Go deeper**" heading.`;
 
+interface ChunkResult {
+  id: string;
+  source_id: string;
+  content: string;
+  similarity: number;
+}
+
+interface SourceMeta {
+  id: string;
+  title: string;
+  author: string;
+  url: string | null;
+}
+
+const STOP_WORDS = new Set([
+  "what", "does", "do", "say", "said", "about", "how", "the", "a", "an",
+  "is", "are", "was", "were", "in", "on", "at", "to", "for", "of", "with",
+  "by", "from", "can", "could", "would", "should", "will", "has", "have",
+  "had", "this", "that", "it", "i", "me", "my", "we", "you", "they",
+  "them", "their", "just", "think", "tell",
+]);
+
+function extractSearchTerms(query: string): string[] {
+  return query
+    .toLowerCase()
+    .replace(/[?.,!]/g, "")
+    .split(/\s+/)
+    .filter((w) => w.length > 1 && !STOP_WORDS.has(w));
+}
+
 async function getRelevantContext(query: string): Promise<string | null> {
   try {
+    const supabase = getSupabase();
+
+    // Embed the query for vector search
     const voyageRes = await fetch("https://api.voyageai.com/v1/embeddings", {
       method: "POST",
       headers: {
@@ -47,35 +80,89 @@ async function getRelevantContext(query: string): Promise<string | null> {
     const embedding = voyageData.data?.[0]?.embedding;
     if (!embedding) return null;
 
-    const { data: chunks, error } = await getSupabase().rpc("match_chunks", {
-      query_embedding: JSON.stringify(embedding),
-      match_threshold: 0.35,
-      match_count: 8,
-    });
+    // Build keyword search on source title/author
+    const terms = extractSearchTerms(query);
+    const keywordFilter = terms.length > 0
+      ? terms.map((t) => `title.ilike.%${t}%,author.ilike.%${t}%`).join(",")
+      : null;
 
-    if (error || !chunks?.length) return null;
+    // Run vector search and keyword search in parallel
+    const [vectorResult, keywordResult] = await Promise.all([
+      supabase.rpc("match_chunks", {
+        query_embedding: JSON.stringify(embedding),
+        match_threshold: 0.35,
+        match_count: 8,
+      }),
+      keywordFilter
+        ? supabase.from("sources").select("id").or(keywordFilter).limit(3)
+        : Promise.resolve({ data: [] }),
+    ]);
 
-    const sourceIds = [...new Set(chunks.map((c: { source_id: string }) => c.source_id))];
-    const { data: sources } = await getSupabase()
+    const vectorChunks: ChunkResult[] = vectorResult.data ?? [];
+    const keywordSourceIds: string[] =
+      keywordResult.data?.map((s: { id: string }) => s.id) ?? [];
+
+    // Find keyword-matched sources not already in vector results
+    const vectorSourceIds = new Set(vectorChunks.map((c) => c.source_id));
+    const newSourceIds = keywordSourceIds.filter((id) => !vectorSourceIds.has(id));
+
+    // Fetch top chunks from keyword-only sources
+    let keywordChunks: ChunkResult[] = [];
+    if (newSourceIds.length > 0) {
+      const { data } = await supabase
+        .from("chunks")
+        .select("id, source_id, content")
+        .in("source_id", newSourceIds)
+        .order("chunk_index", { ascending: true })
+        .limit(2 * newSourceIds.length);
+
+      if (data) {
+        // Take up to 2 chunks per source
+        const perSource = new Map<string, number>();
+        keywordChunks = data
+          .filter((c: { source_id: string }) => {
+            const count = perSource.get(c.source_id) ?? 0;
+            if (count >= 2) return false;
+            perSource.set(c.source_id, count + 1);
+            return true;
+          })
+          .map((c: { id: string; source_id: string; content: string }) => ({
+            ...c,
+            similarity: 0,
+          }));
+      }
+    }
+
+    // Merge and deduplicate by chunk ID, cap at 10
+    const seenIds = new Set<string>();
+    const allChunks: ChunkResult[] = [];
+    for (const chunk of [...vectorChunks, ...keywordChunks]) {
+      if (seenIds.has(chunk.id)) continue;
+      seenIds.add(chunk.id);
+      allChunks.push(chunk);
+      if (allChunks.length >= 10) break;
+    }
+
+    if (allChunks.length === 0) return null;
+
+    // Fetch source metadata
+    const sourceIds = [...new Set(allChunks.map((c) => c.source_id))];
+    const { data: sources } = await supabase
       .from("sources")
       .select("id, title, author, url")
       .in("id", sourceIds);
 
     const sourceMap = new Map(
-      sources?.map((s: { id: string; title: string; author: string; url: string | null }) => [s.id, s]) ?? []
+      sources?.map((s: SourceMeta) => [s.id, s]) ?? []
     );
 
-    const contextParts = chunks.map(
-      (chunk: { source_id: string; content: string; similarity: number }) => {
-        const source = sourceMap.get(chunk.source_id) as
-          | { title: string; author: string; url: string | null }
-          | undefined;
-        const attribution = source
-          ? `[Source: "${source.title}"${source.author ? ` — ${source.author}` : ""}${source.url ? ` | URL: ${source.url}` : ""}]`
-          : "";
-        return `${attribution}\n${chunk.content}`;
-      }
-    );
+    const contextParts = allChunks.map((chunk) => {
+      const source = sourceMap.get(chunk.source_id);
+      const attribution = source
+        ? `[Source: "${source.title}"${source.author ? ` — ${source.author}` : ""}${source.url ? ` | URL: ${source.url}` : ""}]`
+        : "";
+      return `${attribution}\n${chunk.content}`;
+    });
 
     return contextParts.join("\n\n---\n\n");
   } catch {
@@ -174,7 +261,7 @@ export async function POST(req: Request) {
             const userText =
               coreMessages.find((m) => m.role === "user")?.content || "";
             const { text: title } = await generateText({
-              model: anthropic("claude-sonnet-4-5-20250929"),
+              model: anthropic("claude-haiku-4-5-20251001"),
               maxOutputTokens: 20,
               prompt: `Generate a short title (3-6 words, no quotes, no period) for this conversation:\nUser: ${userText}\nAssistant: ${text.substring(0, 200)}`,
             });
@@ -193,9 +280,9 @@ export async function POST(req: Request) {
     return result.toUIMessageStreamResponse();
   } catch (error) {
     console.error("Chat API error:", error);
-    return new Response(
-      JSON.stringify({ error: error instanceof Error ? error.message : "Unknown error" }),
-      { status: 500, headers: { "Content-Type": "application/json" } }
+    return Response.json(
+      { error: error instanceof Error ? error.message : "Unknown error" },
+      { status: 500 }
     );
   }
 }

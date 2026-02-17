@@ -220,7 +220,7 @@ export default function Home() {
               </p>
             </div>
           ) : (
-            <div className="py-4">
+            <div className="py-4 pb-32">
               {messages.map((message, i) => (
                 <ChatMessage
                   key={message.id}
@@ -238,12 +238,11 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Input */}
-      <div className="z-10 bg-background relative">
-        <div className="pointer-events-none absolute inset-x-0 bottom-full h-16 bg-gradient-to-t from-background to-transparent" />
+      {/* Input — floating overlay pinned to bottom */}
+      <div className="absolute bottom-0 inset-x-0 z-10 pointer-events-none">
         {/* Chat steppers */}
         {!isAtBottom && messages.length > 0 && (
-          <div className="relative z-10 flex justify-center -mt-4 mb-1">
+          <div className="flex justify-center mb-2 pointer-events-auto">
             <div className="flex items-center rounded-md border border-border shadow-md bg-background p-1 gap-1">
               <button
                 className="h-8 w-8 flex items-center justify-center rounded hover:bg-accent hover:text-accent-foreground transition-colors disabled:opacity-30 disabled:pointer-events-none"
@@ -262,7 +261,7 @@ export default function Home() {
             </div>
           </div>
         )}
-        <div className="mx-auto max-w-3xl px-4 sm:px-6 py-3 sm:py-4 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+        <div className="mx-auto max-w-3xl px-4 sm:px-6 pb-[max(0.75rem,env(safe-area-inset-bottom))] pointer-events-auto">
           <ChatInput
             value={input}
             onChange={setInput}

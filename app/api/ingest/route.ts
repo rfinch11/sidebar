@@ -4,7 +4,7 @@ import { chunkText } from "@/lib/chunker";
 import { CATEGORIES, CATEGORY_LABELS } from "@/lib/constants";
 import { anthropic } from "@ai-sdk/anthropic";
 import { generateText } from "ai";
-import { NextResponse } from "next/server";
+
 import { YoutubeTranscript } from "youtube-transcript";
 import { requireApprovedUser } from "@/lib/supabase/auth";
 
@@ -91,7 +91,7 @@ async function autoTag(
   ).join("\n");
 
   const { text: response } = await generateText({
-    model: anthropic("claude-sonnet-4-5-20250929"),
+    model: anthropic("claude-haiku-4-5-20251001"),
     prompt: `Analyze this content and return a JSON object with exactly these fields:
 - "categories": an array of 1-3 category keys from the list below that best fit the content (most relevant first):
 ${categoryList}
@@ -129,11 +129,11 @@ export async function POST(req: Request) {
   // Validate
   if (type === "url" || type === "youtube") {
     if (!body.url) {
-      return NextResponse.json({ error: "URL is required" }, { status: 400 });
+      return Response.json({ error: "URL is required" }, { status: 400 });
     }
   } else if (type === "text") {
     if (!body.text || !body.title) {
-      return NextResponse.json({ error: "Text and title are required" }, { status: 400 });
+      return Response.json({ error: "Text and title are required" }, { status: 400 });
     }
   }
 
@@ -149,7 +149,7 @@ export async function POST(req: Request) {
         .single();
 
       if (existing) {
-        return NextResponse.json(
+        return Response.json(
           { error: "Source already exists", id: existing.id },
           { status: 409 }
         );
@@ -163,7 +163,7 @@ export async function POST(req: Request) {
         .single();
 
       if (existing) {
-        return NextResponse.json(
+        return Response.json(
           { error: "This text has already been ingested", id: existing.id },
           { status: 409 }
         );
@@ -182,7 +182,7 @@ export async function POST(req: Request) {
     }
 
     if (rawText.length < 100) {
-      return NextResponse.json(
+      return Response.json(
         { error: "Text content is too short (minimum 100 characters)" },
         { status: 422 }
       );
@@ -246,7 +246,7 @@ export async function POST(req: Request) {
       .map((c: string) => CATEGORY_LABELS[c as keyof typeof CATEGORY_LABELS] || c)
       .join(", ");
 
-    return NextResponse.json({
+    return Response.json({
       id: source.id,
       chunks: totalInserted,
       categories: finalCategories,
@@ -256,6 +256,6 @@ export async function POST(req: Request) {
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown error";
-    return NextResponse.json({ error: message }, { status: 500 });
+    return Response.json({ error: message }, { status: 500 });
   }
 }

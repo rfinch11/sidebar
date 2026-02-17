@@ -1,28 +1,23 @@
 "use client";
 
 import ReactMarkdown from "react-markdown";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 import { ArrowUpRight, BookOpen } from "lucide-react";
-import { Logo } from "@/components/logo";
 
 interface ChatMessageProps {
   role: "user" | "assistant";
   content: string;
+  messageIndex?: number;
 }
 
-export function ChatMessage({ role, content }: ChatMessageProps) {
+export function ChatMessage({ role, content, messageIndex }: ChatMessageProps) {
   const isUser = role === "user";
 
   return (
-    <div className={cn("flex gap-3 py-4", isUser && "flex-row-reverse")}>
-      {!isUser && (
-        <Avatar className="h-8 w-8 shrink-0">
-          <AvatarFallback className="bg-transparent">
-            <Logo size={20} />
-          </AvatarFallback>
-        </Avatar>
-      )}
+    <div
+      className={cn("flex gap-3 py-4", isUser && "flex-row-reverse")}
+      {...(isUser && messageIndex !== undefined ? { "data-user-msg": messageIndex } : {})}
+    >
       <div
         className={cn(
           "flex-1 overflow-hidden",
@@ -33,7 +28,7 @@ export function ChatMessage({ role, content }: ChatMessageProps) {
           className={cn(
             "prose dark:prose-invert max-w-none",
             isUser &&
-              "inline-block rounded-lg bg-primary dark:bg-zinc-800 px-3 py-2 text-primary-foreground dark:text-foreground text-left prose-p:text-primary-foreground dark:prose-p:text-foreground prose-strong:text-primary-foreground dark:prose-strong:text-foreground"
+              "inline-block rounded-lg bg-secondary dark:bg-zinc-800 px-3 py-2 text-secondary-foreground dark:text-foreground text-left prose-p:text-secondary-foreground dark:prose-p:text-foreground prose-strong:text-secondary-foreground dark:prose-strong:text-foreground"
           )}
         >
           {isUser ? (

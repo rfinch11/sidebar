@@ -1,13 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useLayoutEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { CATEGORIES, CATEGORY_LABELS, type Category } from "@/lib/constants";
-import { Loader2, Download, ChevronLeft } from "lucide-react";
+import { Loader2, Download, ChevronLeft, Link as LinkIcon, FileText, Play } from "lucide-react";
 import Link from "next/link";
 
 type IngestMode = "url" | "text" | "youtube";
@@ -42,10 +42,10 @@ async function ingestSource(
   }
 }
 
-const MODE_LABELS: Record<IngestMode, string> = {
-  url: "URL",
-  text: "Text",
-  youtube: "YouTube",
+const MODE_CONFIG: Record<IngestMode, { label: string; icon: React.ReactNode }> = {
+  url: { label: "URL", icon: <LinkIcon className="h-4 w-4" /> },
+  text: { label: "Text", icon: <FileText className="h-4 w-4" /> },
+  youtube: { label: "YouTube", icon: <Play className="h-4 w-4" /> },
 };
 
 export default function IngestPage() {
@@ -54,6 +54,33 @@ export default function IngestPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [progress, setProgress] = useState({ done: 0, total: 0 });
   const [results, setResults] = useState<IngestResult[]>([]);
+
+  // Tab animation refs
+  const tabContainerRef = useRef<HTMLDivElement>(null);
+  const activeTabRef = useRef<HTMLButtonElement>(null);
+  const hasMounted = useRef(false);
+
+  useLayoutEffect(() => {
+    const container = tabContainerRef.current;
+    const activeTab = activeTabRef.current;
+    if (!container || !activeTab) return;
+
+    const { offsetLeft, offsetWidth } = activeTab;
+    const clipRight = 100 - ((offsetLeft + offsetWidth) / container.offsetWidth) * 100;
+    const clipLeft = (offsetLeft / container.offsetWidth) * 100;
+
+    // Disable transition on first render to avoid animating from hidden
+    if (!hasMounted.current) {
+      container.style.transition = "none";
+      hasMounted.current = true;
+      // Re-enable transition after paint
+      requestAnimationFrame(() => {
+        container.style.transition = "";
+      });
+    }
+
+    container.style.clipPath = `inset(0 ${clipRight.toFixed(1)}% 0 ${clipLeft.toFixed(1)}% round 7px)`;
+  }, [mode]);
 
   // URL mode
   const [urls, setUrls] = useState("");
@@ -133,8 +160,8 @@ export default function IngestPage() {
   };
 
   return (
-    <div className="mx-auto max-w-2xl px-4 sm:px-6 py-6 sm:py-8">
-      <div className="mb-6 flex items-center gap-3">
+    <div className="mx-auto max-w-2xl px-4 sm:px-6 pb-6 sm:pb-8">
+      <div className="sticky top-0 z-10 bg-background pt-6 sm:pt-8 pb-6 flex items-center gap-3">
         <Link href="/">
           <Button variant="ghost" size="icon">
             <ChevronLeft className="h-4 w-4" />
@@ -144,18 +171,41 @@ export default function IngestPage() {
       </div>
 
       {/* Mode switcher */}
-      <div className="mb-4 flex gap-1 rounded-lg border border-border p-1">
-        {(Object.keys(MODE_LABELS) as IngestMode[]).map((m) => (
-          <Button
-            key={m}
-            variant={mode === m ? "default" : "ghost"}
-            size="sm"
-            className="flex-1"
-            onClick={() => setMode(m)}
-          >
-            {MODE_LABELS[m]}
-          </Button>
-        ))}
+      <div className="relative mb-4 rounded-lg border border-border p-1">
+        {/* Base layer — inactive styling */}
+        <div className="flex gap-1">
+          {(Object.keys(MODE_CONFIG) as IngestMode[]).map((m) => (
+            <button
+              key={m}
+              className="flex-1 flex items-center justify-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+              onClick={() => setMode(m)}
+            >
+              {MODE_CONFIG[m].icon}
+              {MODE_CONFIG[m].label}
+            </button>
+          ))}
+        </div>
+        {/* Overlay layer — active styling, clipped to active tab */}
+        <div
+          aria-hidden
+          ref={tabContainerRef}
+          className="pointer-events-none absolute inset-[4px] z-10 overflow-hidden transition-[clip-path] duration-[250ms] ease-[ease]"
+          style={{ clipPath: "inset(0 100% 0 0% round 7px)" }}
+        >
+          <div className="flex gap-1 h-full bg-primary rounded-md">
+            {(Object.keys(MODE_CONFIG) as IngestMode[]).map((m) => (
+              <button
+                key={m}
+                ref={mode === m ? activeTabRef : null}
+                tabIndex={-1}
+                className="flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 text-sm font-medium text-primary-foreground"
+              >
+                {MODE_CONFIG[m].icon}
+                {MODE_CONFIG[m].label}
+              </button>
+            ))}
+          </div>
+        </div>
       </div>
 
       <Card>
@@ -171,13 +221,11 @@ export default function IngestPage() {
             {/* URL mode */}
             {mode === "url" && (
               <Textarea
-                placeholder={
-                  "Paste one URL per line:\nhttps://example.com/article-1\nhttps://example.com/article-2\nhttps://example.com/article-3"
-                }
+                placeholder="Paste one URL per line"
                 value={urls}
                 onChange={(e) => setUrls(e.target.value)}
                 rows={8}
-                className="text-sm"
+                className="text-base"
               />
             )}
 
@@ -188,20 +236,20 @@ export default function IngestPage() {
                   placeholder="Title (required)"
                   value={textTitle}
                   onChange={(e) => setTextTitle(e.target.value)}
-                  className="text-sm"
+                  className="text-base"
                 />
                 <Input
                   placeholder="Author (optional)"
                   value={textAuthor}
                   onChange={(e) => setTextAuthor(e.target.value)}
-                  className="text-sm"
+                  className="text-base"
                 />
                 <Textarea
                   placeholder="Paste the text content here..."
                   value={textContent}
                   onChange={(e) => setTextContent(e.target.value)}
                   rows={10}
-                  className="text-sm"
+                  className="text-base"
                 />
               </>
             )}
@@ -213,7 +261,7 @@ export default function IngestPage() {
                   placeholder="https://www.youtube.com/watch?v=..."
                   value={youtubeUrl}
                   onChange={(e) => setYoutubeUrl(e.target.value)}
-                  className="text-sm"
+                  className="text-base"
                 />
                 <p className="text-xs text-muted-foreground">
                   The video must have captions available (auto-generated or manual).
@@ -231,7 +279,7 @@ export default function IngestPage() {
                   <Badge
                     key={cat}
                     variant={categories.includes(cat) ? "default" : "outline"}
-                    className="cursor-pointer"
+                    className={`cursor-pointer text-sm ${categories.includes(cat) ? "" : "text-muted-foreground"}`}
                     onClick={() =>
                       setCategories((prev) =>
                         prev.includes(cat)
@@ -283,8 +331,8 @@ export default function IngestPage() {
             </Button>
           </div>
           {results.map((result, i) => (
-            <Card key={i}>
-              <CardContent className="flex items-center gap-3 py-3">
+            <Card key={i} className="shadow-none hover:shadow-sm transition-shadow py-0">
+              <CardContent className="flex items-center gap-3 px-4 py-4">
                 <Badge
                   variant={
                     result.status === "success" ? "default" : "destructive"

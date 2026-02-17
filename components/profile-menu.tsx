@@ -21,7 +21,12 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { User, LogOut, Trash2, Sun, Moon, Plus } from "lucide-react";
+import { User, Plus } from "lucide-react";
+import { LibraryIcon } from "@/components/ui/library-icon";
+import { SunIcon } from "@/components/ui/sun-icon";
+import { MoonIcon } from "@/components/ui/moon-icon";
+import { LogOutIcon } from "@/components/ui/logout-icon";
+import { TrashIcon } from "@/components/ui/trash-icon";
 import Link from "next/link";
 
 interface ProfileMenuProps {
@@ -71,35 +76,41 @@ export function ProfileMenu({ initials }: ProfileMenuProps) {
     <>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="ghost" size="icon" className="h-10 w-10 text-xs font-medium">
+          <Button variant="outline" size="icon" className="h-10 w-10 text-xs font-medium">
             {initials || <User className="h-4 w-4" />}
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-48">
-          <DropdownMenuItem asChild>
+        <DropdownMenuContent align="end" className="w-56 sm:w-48">
+          <DropdownMenuItem asChild className="group/ingest text-base sm:text-sm px-3 py-3 sm:px-2 sm:py-2.5">
             <Link href="/ingest" className="cursor-pointer">
-              <Plus className="mr-2 h-4 w-4" />
+              <Plus className="mr-2 h-4 w-4 transition-transform duration-300 group-hover/ingest:scale-125" />
               Ingest sources
             </Link>
           </DropdownMenuItem>
-          <DropdownMenuItem onClick={toggleTheme}>
+          <DropdownMenuItem asChild className="group/browse text-base sm:text-sm px-3 py-3 sm:px-2 sm:py-2.5">
+            <Link href="/sources" className="cursor-pointer">
+              <LibraryIcon className="mr-2 h-4 w-4" />
+              Browse sources
+            </Link>
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={toggleTheme} className="group/theme text-base sm:text-sm px-3 py-3 sm:px-2 sm:py-2.5">
             {isDark ? (
-              <Sun className="mr-2 h-4 w-4" />
+              <SunIcon className="mr-2 h-4 w-4" />
             ) : (
-              <Moon className="mr-2 h-4 w-4" />
+              <MoonIcon className="mr-2 h-4 w-4" />
             )}
             {isDark ? "Light mode" : "Dark mode"}
           </DropdownMenuItem>
           <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={handleSignOut}>
-            <LogOut className="mr-2 h-4 w-4" />
+          <DropdownMenuItem onClick={handleSignOut} className="group/signout text-base sm:text-sm px-3 py-3 sm:px-2 sm:py-2.5">
+            <LogOutIcon className="mr-2 h-4 w-4" />
             Sign out
           </DropdownMenuItem>
           <DropdownMenuItem
             onClick={() => setShowDeleteDialog(true)}
-            className="text-destructive focus:text-destructive focus:bg-destructive/10"
+            className="group/delete text-destructive focus:text-destructive focus:bg-destructive/10 text-base sm:text-sm px-3 py-3 sm:px-2 sm:py-2.5"
           >
-            <Trash2 className="mr-2 h-4 w-4 text-destructive" />
+            <TrashIcon className="mr-2 h-4 w-4 text-destructive" />
             Delete account
           </DropdownMenuItem>
         </DropdownMenuContent>
