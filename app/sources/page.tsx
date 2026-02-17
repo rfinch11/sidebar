@@ -138,7 +138,7 @@ export default function SourcesPage() {
           No sources found
         </p>
       ) : (
-        <div className="space-y-2">
+        <div className="flex flex-col gap-4">
           {sources.map((source) => (
             <a
               key={source.id}

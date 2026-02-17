@@ -192,7 +192,7 @@ export default function Home() {
     <div className="relative flex h-dvh flex-col bg-background">
       {/* Header */}
       <header className="flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4 pt-[max(0.75rem,env(safe-area-inset-top))]">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-0">
           <Button
             variant="ghost"
             size="icon"
@@ -213,10 +213,10 @@ export default function Home() {
             <div className="flex h-full min-h-[60dvh] flex-col items-center justify-center text-center">
               <div className="mb-4 flex items-center gap-2">
                 <Logo size={40} />
-                <h2 className="text-xl font-semibold">Sidebar</h2>
+                <h1 className="text-xl font-semibold">Sidebar</h1>
               </div>
               <p className="max-w-sm text-sm text-muted-foreground">
-                Curated sources on design leadership
+                Your personal AI advisor
               </p>
             </div>
           ) : (

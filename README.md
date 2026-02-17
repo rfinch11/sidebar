@@ -1,6 +1,6 @@
 # Sidebar
 
-AI-powered advisory chat for design leadership. Ingest curated content, embed it with Voyage AI, store it in Supabase with pgvector, and chat with Claude using RAG-powered retrieval with citations.
+AI-powered chat for design leadership. Ingest curated content, embed it with Voyage AI, store it in Supabase with pgvector, and chat with Claude using RAG-powered retrieval with citations.
 
 **Live at [sidebar.coach](https://sidebar.coach)**
 

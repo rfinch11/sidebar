@@ -4,7 +4,7 @@ Rules and context for AI agents working on this codebase.
 
 ## Project overview
 
-Sidebar is a RAG-powered advisory chatbot for design leadership. Users chat with Claude, which retrieves relevant context from curated, embedded content stored in Supabase with pgvector. The app runs on Next.js 15 (App Router) with React 19 and deploys to Vercel.
+Sidebar is a RAG-powered chatbot for design leadership. Users chat with Claude, which retrieves relevant context from curated, embedded content stored in Supabase with pgvector. The app runs on Next.js 15 (App Router) with React 19 and deploys to Vercel.
 
 ## Tech stack
 

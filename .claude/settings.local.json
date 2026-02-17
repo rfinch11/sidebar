@@ -42,7 +42,9 @@
       "Bash(# Get the build manifest to find all page routes curl -sL \"\"https://sidebar.coach/_next/static/css/ca541310164c88e3.css\"\")",
       "Bash(fi)",
       "Bash(done)",
-      "Bash(npm run build:*)"
+      "Bash(npm run build:*)",
+      "Bash(npm run dev:*)",
+      "Bash(git fetch:*)"
     ]
   }
 }
