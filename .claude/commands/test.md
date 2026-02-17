@@ -1,0 +1,1 @@
+Kill any existing process on port 3000, then start the Next.js dev server with `npm run dev` in the background. Confirm it's running by checking the port.

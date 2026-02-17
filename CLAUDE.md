@@ -73,7 +73,14 @@ Required in `.env.local` (see `.env.local.example`):
 
 ### Deployment
 
-Deployed to Vercel. Ship with `vercel --prod 2>&1`. No git remote is configured — deployment is direct via Vercel CLI.
+Deployed to Vercel via GitHub integration. Pushing to `main` on `origin` (github.com/rfinch11/sidebar) triggers a production deploy automatically.
+
+**Workflow:** Use the `/ship` custom command to build, commit, and push in one step. Use `/test` to start the local dev server.
+
+### Custom commands
+
+- **`/test`** — Kills port 3000 and starts `npm run dev`
+- **`/ship`** — Runs `npm run build`, stages changed files, commits with a concise message, and pushes to `origin main` to trigger a Vercel production deploy
 
 ### Common tasks
 
