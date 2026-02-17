@@ -35,7 +35,14 @@
       "Bash(vercel whoami:*)",
       "Bash(vercel:*)",
       "Bash(dig:*)",
-      "Bash(grep:*)"
+      "Bash(grep:*)",
+      "Bash(git log:*)",
+      "WebFetch(domain:sidebar.coach)",
+      "Bash(# Find the main app page chunk - need to get the build manifest curl -sL \"\"https://sidebar.coach\"\" -H \"\"Cookie: \"\")",
+      "Bash(# Get the build manifest to find all page routes curl -sL \"\"https://sidebar.coach/_next/static/css/ca541310164c88e3.css\"\")",
+      "Bash(fi)",
+      "Bash(done)",
+      "Bash(npm run build:*)"
     ]
   }
 }
