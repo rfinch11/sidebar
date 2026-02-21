@@ -1,8 +1,18 @@
 import type { Metadata, Viewport } from "next";
-import { Inter } from "next/font/google";
+import localFont from "next/font/local";
 import "./globals.css";
 
-const inter = Inter({ subsets: ["latin"] });
+const hyperlegibleSans = localFont({
+  src: [
+    { path: "../public/fonts/HyperlegibleSans-Regular.woff2", weight: "400", style: "normal" },
+    { path: "../public/fonts/HyperlegibleSans-Italic.woff2", weight: "400", style: "italic" },
+    { path: "../public/fonts/HyperlegibleSans-Medium.woff2", weight: "500", style: "normal" },
+    { path: "../public/fonts/HyperlegibleSans-MediumItalic.woff2", weight: "500", style: "italic" },
+    { path: "../public/fonts/HyperlegibleSans-Bold.woff2", weight: "700", style: "normal" },
+    { path: "../public/fonts/HyperlegibleSans-BoldItalic.woff2", weight: "700", style: "italic" },
+  ],
+  display: "swap",
+});
 
 export const metadata: Metadata = {
   title: "Sidebar",
@@ -30,7 +40,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className="dark" suppressHydrationWarning>
-      <body className={`${inter.className} min-h-dvh antialiased`}>
+      <body className={`${hyperlegibleSans.className} min-h-dvh antialiased`}>
         {children}
       </body>
     </html>
