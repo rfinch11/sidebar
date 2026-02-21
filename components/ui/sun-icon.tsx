@@ -15,7 +15,7 @@ export function SunIcon({ className }: { className?: string }) {
       {/* Center circle — stays still */}
       <circle cx="12" cy="12" r="4" />
       {/* Rays — rotate around center on hover */}
-      <g className="origin-center transition-transform duration-500 ease-out group-hover/theme:rotate-90">
+      <g className="origin-center transition-transform duration-300 ease-out group-hover/theme:rotate-90">
         <path d="M12 2v2" />
         <path d="M12 20v2" />
         <path d="m4.93 4.93 1.41 1.41" />

@@ -83,7 +83,7 @@ export function ProfileMenu({ initials }: ProfileMenuProps) {
         <DropdownMenuContent align="end" className="w-56 sm:w-48">
           <DropdownMenuItem asChild className="group/ingest text-base sm:text-sm px-3 py-3 sm:px-2 sm:py-2.5">
             <Link href="/ingest" className="cursor-pointer">
-              <Plus className="mr-2 h-4 w-4 transition-transform duration-300 group-hover/ingest:scale-125" />
+              <Plus className="mr-2 h-4 w-4 transition-transform duration-300 ease-out group-hover/ingest:scale-125" />
               Ingest sources
             </Link>
           </DropdownMenuItem>

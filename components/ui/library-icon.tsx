@@ -12,25 +12,16 @@ export function LibraryIcon({ className }: { className?: string }) {
       strokeLinejoin="round"
       className={className}
     >
-      {/* Leftmost vertical line — leans right most on hover */}
-      <path
-        d="M4 4v16"
-        className="origin-[4px_20px] transition-transform duration-300 ease-out group-hover/browse:rotate-[16deg]"
-      />
+      {/* Leftmost vertical line */}
+      <path d="M4 4v16" />
       {/* Second vertical line */}
-      <path
-        d="M8 8v12"
-        className="origin-[8px_20px] transition-transform duration-300 ease-out group-hover/browse:rotate-[16deg]"
-      />
+      <path d="M8 8v12" />
       {/* Third vertical line */}
-      <path
-        d="M12 6v14"
-        className="origin-[12px_20px] transition-transform duration-300 ease-out group-hover/browse:rotate-[16deg]"
-      />
+      <path d="M12 6v14" />
       {/* Rightmost leaning line — straightens to vertical on hover */}
       <path
         d="m16 6 4 14"
-        className="origin-[20px_20px] transition-transform duration-300 ease-out group-hover/browse:rotate-[16deg]"
+        className="origin-[16px_6px] transition-transform duration-300 ease-out group-hover/browse:rotate-[16deg]"
       />
     </svg>
   );
