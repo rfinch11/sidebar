@@ -10,6 +10,7 @@ import { ArrowDown, ArrowUp } from "lucide-react";
 import { Logo } from "@/components/logo";
 import { Button } from "@/components/ui/button";
 import { ProfileMenu } from "@/components/profile-menu";
+import { LightRays } from "@/components/light-rays";
 
 function getMessageText(message: { parts: Array<{ type: string; text?: string }> }): string {
   return message.parts
@@ -189,7 +190,23 @@ export default function Home() {
   }, []);
 
   return (
-    <div className="relative flex h-dvh flex-col bg-background">
+    <div className="isolate relative flex h-dvh flex-col bg-background">
+      {/* Background light rays */}
+      <div className="absolute inset-0 -z-10 pointer-events-none opacity-60">
+        <LightRays
+          raysOrigin="top-left"
+          raysColor="#6b8ef0"
+          raysSpeed={0.7}
+          lightSpread={0.65}
+          rayLength={1.6}
+          fadeDistance={1.9}
+          saturation={0.5}
+          followMouse={true}
+          mouseInfluence={0.08}
+          noiseAmount={0.05}
+          distortion={0.03}
+        />
+      </div>
       {/* Header */}
       <header className="flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4 pt-[max(0.75rem,env(safe-area-inset-top))]">
         <div className="flex items-center gap-0">
