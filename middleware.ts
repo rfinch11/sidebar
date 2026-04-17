@@ -2,6 +2,8 @@ import { type NextRequest, NextResponse } from "next/server";
 import { updateSession } from "@/lib/supabase/middleware";
 
 const PUBLIC_ROUTES = ["/login", "/auth/callback"];
+const APPROVED_COOKIE = "sb-approved";
+const APPROVED_COOKIE_MAX_AGE = 60 * 60; // 1 hour
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -26,7 +28,13 @@ export async function middleware(request: NextRequest) {
     return supabaseResponse;
   }
 
-  // Check approval status
+  // Skip DB query if the approval cookie is present for this user
+  const approvedCookie = request.cookies.get(APPROVED_COOKIE);
+  if (approvedCookie?.value === user.id) {
+    return supabaseResponse;
+  }
+
+  // Check approval status in DB
   const { data: profile } = await supabase
     .from("profiles")
     .select("status")
@@ -38,6 +46,14 @@ export async function middleware(request: NextRequest) {
     url.pathname = "/waitlist";
     return NextResponse.redirect(url);
   }
+
+  // Cache approval in a cookie so we skip the DB query for the next hour
+  supabaseResponse.cookies.set(APPROVED_COOKIE, user.id, {
+    httpOnly: true,
+    sameSite: "strict",
+    maxAge: APPROVED_COOKIE_MAX_AGE,
+    path: "/",
+  });
 
   return supabaseResponse;
 }

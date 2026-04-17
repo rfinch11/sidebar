@@ -68,10 +68,7 @@ async function getRelevantContext(query: string): Promise<string | null> {
         Authorization: `Bearer ${process.env.VOYAGE_API_KEY}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({
-        input: [query],
-        model: "voyage-3",
-      }),
+      body: JSON.stringify({ input: [query], model: "voyage-3" }),
     });
 
     if (!voyageRes.ok) return null;
@@ -80,13 +77,13 @@ async function getRelevantContext(query: string): Promise<string | null> {
     const embedding = voyageData.data?.[0]?.embedding;
     if (!embedding) return null;
 
-    // Build keyword search on source title/author
+    // Build keyword filter
     const terms = extractSearchTerms(query);
     const keywordFilter = terms.length > 0
       ? terms.map((t) => `title.ilike.%${t}%,author.ilike.%${t}%`).join(",")
       : null;
 
-    // Run vector search and keyword search in parallel
+    // Vector search + keyword search in parallel
     const [vectorResult, keywordResult] = await Promise.all([
       supabase.rpc("match_chunks", {
         query_embedding: JSON.stringify(embedding),
@@ -102,38 +99,49 @@ async function getRelevantContext(query: string): Promise<string | null> {
     const keywordSourceIds: string[] =
       keywordResult.data?.map((s: { id: string }) => s.id) ?? [];
 
-    // Find keyword-matched sources not already in vector results
     const vectorSourceIds = new Set(vectorChunks.map((c) => c.source_id));
     const newSourceIds = keywordSourceIds.filter((id) => !vectorSourceIds.has(id));
 
-    // Fetch top chunks from keyword-only sources
-    let keywordChunks: ChunkResult[] = [];
-    if (newSourceIds.length > 0) {
-      const { data } = await supabase
-        .from("chunks")
-        .select("id, source_id, content")
-        .in("source_id", newSourceIds)
-        .order("chunk_index", { ascending: true })
-        .limit(2 * newSourceIds.length);
+    // All known source IDs for metadata fetch — start it immediately in parallel
+    const allKnownSourceIds = [
+      ...vectorSourceIds,
+      ...newSourceIds,
+    ];
 
-      if (data) {
-        // Take up to 2 chunks per source
-        const perSource = new Map<string, number>();
-        keywordChunks = data
-          .filter((c: { source_id: string }) => {
-            const count = perSource.get(c.source_id) ?? 0;
-            if (count >= 2) return false;
-            perSource.set(c.source_id, count + 1);
-            return true;
-          })
-          .map((c: { id: string; source_id: string; content: string }) => ({
-            ...c,
-            similarity: 0,
-          }));
-      }
+    // Fetch keyword chunks + source metadata in parallel
+    const [keywordChunksData, sourcesData] = await Promise.all([
+      newSourceIds.length > 0
+        ? supabase
+            .from("chunks")
+            .select("id, source_id, content")
+            .in("source_id", newSourceIds)
+            .order("chunk_index", { ascending: true })
+            .limit(2 * newSourceIds.length)
+        : Promise.resolve({ data: [] }),
+      supabase
+        .from("sources")
+        .select("id, title, author, url")
+        .in("id", allKnownSourceIds),
+    ]);
+
+    // Build keyword chunks list
+    let keywordChunks: ChunkResult[] = [];
+    if (keywordChunksData.data) {
+      const perSource = new Map<string, number>();
+      keywordChunks = keywordChunksData.data
+        .filter((c: { source_id: string }) => {
+          const count = perSource.get(c.source_id) ?? 0;
+          if (count >= 2) return false;
+          perSource.set(c.source_id, count + 1);
+          return true;
+        })
+        .map((c: { id: string; source_id: string; content: string }) => ({
+          ...c,
+          similarity: 0,
+        }));
     }
 
-    // Merge and deduplicate by chunk ID, cap at 10
+    // Merge and deduplicate, cap at 10
     const seenIds = new Set<string>();
     const allChunks: ChunkResult[] = [];
     for (const chunk of [...vectorChunks, ...keywordChunks]) {
@@ -145,26 +153,19 @@ async function getRelevantContext(query: string): Promise<string | null> {
 
     if (allChunks.length === 0) return null;
 
-    // Fetch source metadata
-    const sourceIds = [...new Set(allChunks.map((c) => c.source_id))];
-    const { data: sources } = await supabase
-      .from("sources")
-      .select("id, title, author, url")
-      .in("id", sourceIds);
-
     const sourceMap = new Map(
-      sources?.map((s: SourceMeta) => [s.id, s]) ?? []
+      sourcesData.data?.map((s: SourceMeta) => [s.id, s]) ?? []
     );
 
-    const contextParts = allChunks.map((chunk) => {
-      const source = sourceMap.get(chunk.source_id);
-      const attribution = source
-        ? `[Source: "${source.title}"${source.author ? ` — ${source.author}` : ""}${source.url ? ` | URL: ${source.url}` : ""}]`
-        : "";
-      return `${attribution}\n${chunk.content}`;
-    });
-
-    return contextParts.join("\n\n---\n\n");
+    return allChunks
+      .map((chunk) => {
+        const source = sourceMap.get(chunk.source_id);
+        const attribution = source
+          ? `[Source: "${source.title}"${source.author ? ` — ${source.author}` : ""}${source.url ? ` | URL: ${source.url}` : ""}]`
+          : "";
+        return `${attribution}\n${chunk.content}`;
+      })
+      .join("\n\n---\n\n");
   } catch {
     return null;
   }
@@ -214,7 +215,8 @@ export async function POST(req: Request) {
 
     let context: string | null = null;
     if (lastUserMessage?.content) {
-      context = await getRelevantContext(lastUserMessage.content);
+      const timeout = new Promise<null>((resolve) => setTimeout(() => resolve(null), 3000));
+      context = await Promise.race([getRelevantContext(lastUserMessage.content), timeout]);
     }
 
     const systemWithContext = context

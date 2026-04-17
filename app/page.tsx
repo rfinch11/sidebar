@@ -10,7 +10,53 @@ import { ArrowDown, ArrowUp } from "lucide-react";
 import { Logo } from "@/components/logo";
 import { Button } from "@/components/ui/button";
 import { ProfileMenu } from "@/components/profile-menu";
-import { LightRays } from "@/components/light-rays";
+
+function SourceRolodex() {
+  const [excerpts, setExcerpts] = useState<string[]>([]);
+  const [index, setIndex] = useState(0);
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/sources/excerpts")
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.excerpts?.length > 0) {
+          setExcerpts(data.excerpts);
+          setVisible(true);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    if (excerpts.length < 2) return;
+    const id = setInterval(() => {
+      setVisible(false);
+      setTimeout(() => {
+        setIndex((i) => (i + 1) % excerpts.length);
+        setVisible(true);
+      }, 500);
+    }, 5000);
+    return () => clearInterval(id);
+  }, [excerpts]);
+
+  if (!excerpts.length) return null;
+
+  return (
+    <p
+      className="max-w-sm text-sm text-muted-foreground transition-opacity duration-500"
+      style={{ opacity: visible ? 1 : 0 }}
+    >
+      &ldquo;{excerpts[index]}&rdquo;
+    </p>
+  );
+}
+import dynamic from "next/dynamic";
+
+const LightRays = dynamic(
+  () => import("@/components/light-rays").then((m) => ({ default: m.LightRays })),
+  { ssr: false }
+);
 
 function getMessageText(message: { parts: Array<{ type: string; text?: string }> }): string {
   return message.parts
@@ -227,14 +273,9 @@ export default function Home() {
       <div ref={scrollRef} className="flex-1 overflow-y-auto">
         <div className="mx-auto max-w-3xl px-4 sm:px-6">
           {messages.length === 0 ? (
-            <div className="flex h-full min-h-[60dvh] flex-col items-center justify-center text-center">
-              <div className="mb-4 flex items-center gap-2">
-                <Logo size={40} />
-                <h1 className="text-xl font-semibold">Sidebar</h1>
-              </div>
-              <p className="max-w-sm text-sm text-muted-foreground">
-                Your personal AI advisor
-              </p>
+            <div className="flex h-full min-h-[60dvh] flex-col items-center justify-center text-center gap-3">
+              <h1 className="text-xl font-semibold">Your personal advisor</h1>
+              <SourceRolodex />
             </div>
           ) : (
             <div className="py-4 pb-32">
@@ -244,6 +285,7 @@ export default function Home() {
                   role={message.role as "user" | "assistant"}
                   content={getMessageText(message)}
                   messageIndex={message.role === "user" ? messages.slice(0, i).filter(m => m.role === "user").length : undefined}
+                  isStreaming={isLoading && i === messages.length - 1 && message.role === "assistant"}
                 />
               ))}
               {status === "submitted" && (
