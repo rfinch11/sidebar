@@ -267,9 +267,13 @@ export default function Home() {
       <div ref={scrollRef} className="flex-1 overflow-y-auto">
         <div className="mx-auto max-w-3xl px-4 sm:px-6">
           {messages.length === 0 ? (
-            <div className="flex h-full min-h-[60dvh] flex-col items-center justify-center text-center gap-3">
-              <h1 className="text-xl font-semibold">Your personal advisor</h1>
-              <SourceRolodex />
+            <div className="flex h-full min-h-[60dvh] flex-col items-center justify-center text-center">
+              <div className="relative flex flex-col items-center">
+                <h1 className="text-xl font-semibold">Your personal advisor</h1>
+                <div className="absolute top-full mt-3 w-screen max-w-sm px-4">
+                  <SourceRolodex />
+                </div>
+              </div>
             </div>
           ) : (
             <div className="py-4 pb-32">
