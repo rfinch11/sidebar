@@ -4,7 +4,7 @@ import { useState, useRef, useLayoutEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { CATEGORIES, CATEGORY_LABELS, type Category } from "@/lib/constants";
 import { Loader2, Download, ChevronLeft, Link as LinkIcon, FileText, Play } from "lucide-react";
@@ -208,16 +208,13 @@ export default function IngestPage() {
         </div>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">
-            {mode === "url" && "Add URLs"}
-            {mode === "text" && "Paste Text"}
-            {mode === "youtube" && "YouTube Video"}
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
+      <div className="mt-6">
+        <h2 className="text-base font-semibold mb-4">
+          {mode === "url" && "Add URLs"}
+          {mode === "text" && "Paste Text"}
+          {mode === "youtube" && "YouTube Video"}
+        </h2>
+        <form onSubmit={handleSubmit} className="space-y-4">
             {/* URL mode */}
             {mode === "url" && (
               <Textarea
@@ -311,9 +308,8 @@ export default function IngestPage() {
                 </>
               )}
             </Button>
-          </form>
-        </CardContent>
-      </Card>
+        </form>
+      </div>
 
       {results.length > 0 && (
         <div className="mt-6 space-y-2">

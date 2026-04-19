@@ -253,7 +253,7 @@ export default function Home() {
           <Button
             variant="ghost"
             size="icon"
-            className="h-10 w-10"
+            className={`h-10 w-10 ${sidebarOpen ? "cursor-w-resize" : "cursor-e-resize"}`}
             onClick={() => setSidebarOpen(true)}
           >
             <Logo size={20} />
