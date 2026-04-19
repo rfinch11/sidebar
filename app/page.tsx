@@ -14,7 +14,6 @@ import { ProfileMenu } from "@/components/profile-menu";
 function SourceRolodex() {
   const [excerpts, setExcerpts] = useState<string[]>([]);
   const [index, setIndex] = useState(0);
-  const [visible, setVisible] = useState(false);
 
   useEffect(() => {
     fetch("/api/sources/excerpts")
@@ -22,7 +21,6 @@ function SourceRolodex() {
       .then((data) => {
         if (data.excerpts?.length > 0) {
           setExcerpts(data.excerpts);
-          setVisible(true);
         }
       })
       .catch(() => {});
@@ -31,11 +29,7 @@ function SourceRolodex() {
   useEffect(() => {
     if (excerpts.length < 2) return;
     const id = setInterval(() => {
-      setVisible(false);
-      setTimeout(() => {
-        setIndex((i) => (i + 1) % excerpts.length);
-        setVisible(true);
-      }, 500);
+      setIndex((i) => (i + 1) % excerpts.length);
     }, 5000);
     return () => clearInterval(id);
   }, [excerpts]);
@@ -44,8 +38,8 @@ function SourceRolodex() {
 
   return (
     <p
-      className="max-w-sm text-sm text-muted-foreground transition-opacity duration-500"
-      style={{ opacity: visible ? 1 : 0 }}
+      key={index}
+      className="max-w-sm text-sm text-muted-foreground animate-fade-in duration-500"
     >
       &ldquo;{excerpts[index]}&rdquo;
     </p>
