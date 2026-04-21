@@ -57,7 +57,7 @@ function extractSearchTerms(query: string): string[] {
     .filter((w) => w.length > 1 && !STOP_WORDS.has(w));
 }
 
-async function getRelevantContext(query: string): Promise<string | null> {
+async function getRelevantContext(query: string, categories?: string[]): Promise<string | null> {
   try {
     const supabase = getSupabase();
 
@@ -83,21 +83,44 @@ async function getRelevantContext(query: string): Promise<string | null> {
       ? terms.map((t) => `title.ilike.%${t}%,author.ilike.%${t}%`).join(",")
       : null;
 
+    const hasCategories = categories && categories.length > 0;
+
     // Vector search + keyword search in parallel
     const [vectorResult, keywordResult] = await Promise.all([
       supabase.rpc("match_chunks", {
         query_embedding: JSON.stringify(embedding),
         match_threshold: 0.35,
-        match_count: 8,
+        match_count: hasCategories ? 20 : 8, // fetch more so post-filter has enough to work with
       }),
       keywordFilter
-        ? supabase.from("sources").select("id").or(keywordFilter).limit(3)
+        ? (() => {
+            let q = supabase.from("sources").select("id").or(keywordFilter).limit(3);
+            if (hasCategories) q = q.overlaps("category", categories!);
+            return q;
+          })()
         : Promise.resolve({ data: [] }),
     ]);
 
-    const vectorChunks: ChunkResult[] = vectorResult.data ?? [];
+    let vectorChunks: ChunkResult[] = vectorResult.data ?? [];
     const keywordSourceIds: string[] =
       keywordResult.data?.map((s: { id: string }) => s.id) ?? [];
+
+    // If categories are selected, post-filter vector chunks by fetching source categories
+    if (hasCategories && vectorChunks.length > 0) {
+      const vectorSourceIds = [...new Set(vectorChunks.map((c) => c.source_id))];
+      const { data: catData } = await supabase
+        .from("sources")
+        .select("id, category")
+        .in("id", vectorSourceIds);
+      const allowedIds = new Set(
+        (catData ?? [])
+          .filter((s: { id: string; category: string[] | null }) =>
+            s.category?.some((c) => categories!.includes(c))
+          )
+          .map((s: { id: string }) => s.id)
+      );
+      vectorChunks = vectorChunks.filter((c) => allowedIds.has(c.source_id));
+    }
 
     const vectorSourceIds = new Set(vectorChunks.map((c) => c.source_id));
     const newSourceIds = keywordSourceIds.filter((id) => !vectorSourceIds.has(id));
@@ -194,9 +217,10 @@ export async function POST(req: Request) {
   if (auth.error) return auth.error;
 
   try {
-    const { messages, id: conversationId } = await req.json() as {
+    const { messages, id: conversationId, categories } = await req.json() as {
       messages: IncomingMessage[];
       id?: string;
+      categories?: string[];
     };
 
     // Convert UI messages (parts) to core messages (content) for the model
@@ -216,7 +240,7 @@ export async function POST(req: Request) {
     let context: string | null = null;
     if (lastUserMessage?.content) {
       const timeout = new Promise<null>((resolve) => setTimeout(() => resolve(null), 3000));
-      context = await Promise.race([getRelevantContext(lastUserMessage.content), timeout]);
+      context = await Promise.race([getRelevantContext(lastUserMessage.content, categories), timeout]);
     }
 
     const systemWithContext = context

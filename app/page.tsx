@@ -68,6 +68,7 @@ function getInitialChatId(): string {
 
 export default function Home() {
   const [activeChatId, setActiveChatId] = useState(getInitialChatId);
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [pendingLoadId, setPendingLoadId] = useState<string | null>(() => {
     if (typeof window !== "undefined") {
@@ -215,7 +216,7 @@ export default function Home() {
     const text = input.trim();
     if (!text || isLoading) return;
     setInput("");
-    sendMessage({ text });
+    sendMessage({ text }, { body: { categories: selectedCategories } });
   };
 
   const onSelectChat = useCallback((id: string) => {
@@ -324,6 +325,8 @@ export default function Home() {
             onChange={setInput}
             onSubmit={onSubmit}
             isLoading={isLoading}
+            selectedCategories={selectedCategories}
+            onCategoriesChange={setSelectedCategories}
           />
         </div>
       </div>
