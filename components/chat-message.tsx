@@ -2,7 +2,7 @@
 
 import ReactMarkdown from "react-markdown";
 import { cn } from "@/lib/utils";
-import { ArrowUpRight, BookOpen } from "lucide-react";
+import { ArrowUpRight, ArrowRight, BookOpen } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
 interface ChatMessageProps {
@@ -10,6 +10,7 @@ interface ChatMessageProps {
   content: string;
   messageIndex?: number;
   isStreaming?: boolean;
+  onFollowUp?: (question: string) => void;
 }
 
 // Reveals content at a steady pace (~16 chars/frame).
@@ -66,6 +67,18 @@ function useSmoothStream(target: string, isStreaming: boolean) {
   return displayed;
 }
 
+function splitFollowUps(content: string): { main: string; followUps: string[] } {
+  // Strip the Sources section
+  const withoutSources = content.replace(/\*\*Sources\*\*\s*\n([\s\S]*?)(\n\n|\n(?=\*\*)|$)/i, "\n");
+
+  const match = withoutSources.match(/\*\*Go deeper\*\*\s*\n([\s\S]*)$/i);
+  if (!match) return { main: withoutSources.trim(), followUps: [] };
+
+  const main = withoutSources.slice(0, match.index).trim();
+  const followUps = [...match[1].matchAll(/^[-*]\s+(.+)$/gm)].map((m) => m[1].trim());
+  return { main, followUps };
+}
+
 const mdComponents = {
   a: ({ href, children }: { href?: string; children?: React.ReactNode }) => {
     const isExternal = href && href !== "#";
@@ -95,9 +108,11 @@ const mdComponents = {
   },
 };
 
-export function ChatMessage({ role, content, messageIndex, isStreaming }: ChatMessageProps) {
+export function ChatMessage({ role, content, messageIndex, isStreaming, onFollowUp }: ChatMessageProps) {
   const isUser = role === "user";
   const smoothContent = useSmoothStream(content, isStreaming ?? false);
+  const { main, followUps } = isUser ? { main: smoothContent, followUps: [] } : splitFollowUps(smoothContent);
+  const showChips = !isStreaming && followUps.length > 0 && !!onFollowUp;
 
   return (
     <div
@@ -115,11 +130,24 @@ export function ChatMessage({ role, content, messageIndex, isStreaming }: ChatMe
           {isUser ? (
             <p className="m-0">{content}</p>
           ) : (
-            <ReactMarkdown components={mdComponents}>
-              {smoothContent}
-            </ReactMarkdown>
+            <ReactMarkdown components={mdComponents}>{main}</ReactMarkdown>
           )}
         </div>
+
+        {showChips && (
+          <div className="mt-3 flex flex-col gap-2">
+            {followUps.map((q) => (
+              <button
+                key={q}
+                onClick={() => onFollowUp(q)}
+                className="group w-full text-left rounded-lg border border-border/60 px-3 py-2 text-sm text-muted-foreground transition-colors hover:border-border hover:bg-accent hover:text-accent-foreground active:scale-[0.99] flex items-center justify-between gap-2"
+              >
+                <span>{q}</span>
+                <ArrowRight className="h-3.5 w-3.5 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
+              </button>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

@@ -165,10 +165,10 @@ export default function Home() {
     return () => observer.disconnect();
   }, []);
 
-  // Auto-scroll to bottom on new messages
+  // Auto-scroll to bottom on new messages and when streaming ends (chips appear)
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ block: "end" });
-  }, [messages]);
+  }, [messages, isLoading]);
 
   const [stepIndex, setStepIndex] = useState(-1);
 
@@ -217,6 +217,11 @@ export default function Home() {
     if (!text || isLoading) return;
     setInput("");
     sendMessage({ text }, { body: { categories: selectedCategories } });
+  };
+
+  const onFollowUp = (question: string) => {
+    if (isLoading) return;
+    sendMessage({ text: question }, { body: { categories: selectedCategories } });
   };
 
   const onSelectChat = useCallback((id: string) => {
@@ -285,6 +290,7 @@ export default function Home() {
                   content={getMessageText(message)}
                   messageIndex={message.role === "user" ? messages.slice(0, i).filter(m => m.role === "user").length : undefined}
                   isStreaming={isLoading && i === messages.length - 1 && message.role === "assistant"}
+                  onFollowUp={message.role === "assistant" ? onFollowUp : undefined}
                 />
               ))}
               {status === "submitted" && (
