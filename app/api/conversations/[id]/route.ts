@@ -23,6 +23,38 @@ export async function GET(
   return Response.json(data);
 }
 
+export async function PATCH(
+  req: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const auth = await requireApprovedUser();
+  if (auth.error) return auth.error;
+
+  const { id } = await params;
+  const body = await req.json() as { pinned?: boolean; title?: string };
+
+  const updates: Record<string, unknown> = {};
+  if (typeof body.pinned === "boolean") {
+    updates.pinned = body.pinned;
+    updates.pinned_at = body.pinned ? new Date().toISOString() : null;
+  }
+  if (typeof body.title === "string" && body.title.trim()) {
+    updates.title = body.title.trim().substring(0, 100);
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("conversations")
+    .update(updates)
+    .eq("id", id);
+
+  if (error) {
+    return Response.json({ error: error.message }, { status: 500 });
+  }
+
+  return Response.json({ ok: true });
+}
+
 export async function DELETE(
   _req: Request,
   { params }: { params: Promise<{ id: string }> }

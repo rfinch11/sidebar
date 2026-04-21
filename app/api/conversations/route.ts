@@ -8,7 +8,7 @@ export async function GET() {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("conversations")
-    .select("id, title, updated_at")
+    .select("id, title, updated_at, pinned, pinned_at")
     .order("updated_at", { ascending: false });
 
   if (error) {

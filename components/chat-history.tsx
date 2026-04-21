@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   Sheet,
   SheetContent,
@@ -8,14 +8,23 @@ import {
   SheetTitle,
   SheetDescription,
 } from "@/components/ui/sheet";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
-import { Plus, Trash2, ChevronLeft, Copy, Check } from "lucide-react";
+import { Plus, ChevronLeft, Pin, PinOff, Pencil, Trash2, MoreHorizontal, ChevronDown, Clock } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface Conversation {
   id: string;
   title: string;
   updated_at: string;
+  pinned: boolean;
+  pinned_at: string | null;
 }
 
 interface ChatHistoryProps {
@@ -42,6 +51,115 @@ function formatRelativeDate(dateStr: string): string {
   return date.toLocaleDateString();
 }
 
+function ConversationItem({
+  conv,
+  isActive,
+  renamingId,
+  renameValue,
+  onSelect,
+  onRenameStart,
+  onRenameChange,
+  onRenameCommit,
+  onRenameKeyDown,
+  onPin,
+  onDelete,
+}: {
+  conv: Conversation;
+  isActive: boolean;
+  renamingId: string | null;
+  renameValue: string;
+  onSelect: () => void;
+  onRenameStart: (id: string, title: string) => void;
+  onRenameChange: (val: string) => void;
+  onRenameCommit: (id: string) => void;
+  onRenameKeyDown: (e: React.KeyboardEvent, id: string) => void;
+  onPin: (id: string, pinned: boolean) => void;
+  onDelete: (id: string) => void;
+}) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const isRenaming = renamingId === conv.id;
+
+  useEffect(() => {
+    if (isRenaming) inputRef.current?.focus();
+  }, [isRenaming]);
+
+  return (
+    <div
+      className={cn(
+        "group w-full text-left px-3 py-2 rounded-md text-sm",
+        "transition-colors flex items-center gap-2",
+        isActive ? "bg-accent text-accent-foreground" : "hover:bg-accent/50"
+      )}
+    >
+      <div className="min-w-0 flex-1 cursor-pointer" onClick={onSelect}>
+        {isRenaming ? (
+          <input
+            ref={inputRef}
+            value={renameValue}
+            onChange={(e) => onRenameChange(e.target.value)}
+            onBlur={() => onRenameCommit(conv.id)}
+            onKeyDown={(e) => onRenameKeyDown(e, conv.id)}
+            onClick={(e) => e.stopPropagation()}
+            className="w-full bg-transparent outline-none font-medium text-sm truncate"
+          />
+        ) : (
+          <p className="truncate text-sm text-muted-foreground">{conv.title}</p>
+        )}
+        {!isRenaming && (
+          <p className="text-xs text-muted-foreground">
+            {formatRelativeDate(conv.updated_at)}
+          </p>
+        )}
+      </div>
+
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <button
+            onClick={(e) => e.stopPropagation()}
+            className={cn(
+              "shrink-0 flex items-center justify-center rounded-md p-1 transition-colors",
+              "text-muted-foreground hover:text-foreground hover:bg-accent",
+              "opacity-0 group-hover:opacity-100 focus:opacity-100",
+              "sm:opacity-0 sm:group-hover:opacity-100",
+              "opacity-100 sm:opacity-0" // always visible on mobile
+            )}
+          >
+            <MoreHorizontal className="h-4 w-4" />
+          </button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-40">
+          <DropdownMenuItem
+            onSelect={() => onPin(conv.id, !conv.pinned)}
+            className="min-h-[44px] sm:min-h-0"
+          >
+            {conv.pinned ? (
+              <><PinOff className="h-4 w-4" /><span>Unpin</span></>
+            ) : (
+              <><Pin className="h-4 w-4" /><span>Pin</span></>
+            )}
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            onSelect={() => onRenameStart(conv.id, conv.title)}
+            className="min-h-[44px] sm:min-h-0"
+          >
+            <Pencil className="h-4 w-4" />
+            <span>Rename</span>
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem
+            variant="destructive"
+            onSelect={() => onDelete(conv.id)}
+            className="min-h-[44px] sm:min-h-0"
+          >
+            <Trash2 className="h-4 w-4" />
+            <span>Delete</span>
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </div>
+  );
+}
+
 export function ChatHistory({
   open,
   onOpenChange,
@@ -51,6 +169,10 @@ export function ChatHistory({
 }: ChatHistoryProps) {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [loading, setLoading] = useState(false);
+  const [renamingId, setRenamingId] = useState<string | null>(null);
+  const [renameValue, setRenameValue] = useState("");
+  const [pinnedOpen, setPinnedOpen] = useState(true);
+  const [recentsOpen, setRecentsOpen] = useState(true);
 
   useEffect(() => {
     if (!open) return;
@@ -62,20 +184,67 @@ export function ChatHistory({
       .finally(() => setLoading(false));
   }, [open]);
 
-  const [copiedId, setCopiedId] = useState<string | null>(null);
-
-  const handleCopyId = (e: React.MouseEvent, id: string) => {
-    e.stopPropagation();
-    navigator.clipboard.writeText(id);
-    setCopiedId(id);
-    setTimeout(() => setCopiedId(null), 1500);
+  const handlePin = async (id: string, pinned: boolean) => {
+    setConversations((prev) =>
+      prev.map((c) => c.id === id ? { ...c, pinned, pinned_at: pinned ? new Date().toISOString() : null } : c)
+    );
+    await fetch(`/api/conversations/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ pinned }),
+    });
   };
 
-  const handleDelete = async (e: React.MouseEvent, id: string) => {
-    e.stopPropagation();
-    await fetch(`/api/conversations/${id}`, { method: "DELETE" });
+  const handleRenameStart = (id: string, title: string) => {
+    setRenamingId(id);
+    setRenameValue(title);
+  };
+
+  const handleRenameCommit = async (id: string) => {
+    const title = renameValue.trim();
+    setRenamingId(null);
+    if (!title) return;
+    setConversations((prev) =>
+      prev.map((c) => c.id === id ? { ...c, title } : c)
+    );
+    await fetch(`/api/conversations/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ title }),
+    });
+  };
+
+  const handleRenameKeyDown = (e: React.KeyboardEvent, id: string) => {
+    if (e.key === "Enter") handleRenameCommit(id);
+    if (e.key === "Escape") setRenamingId(null);
+  };
+
+  const handleDelete = async (id: string) => {
     setConversations((prev) => prev.filter((c) => c.id !== id));
+    await fetch(`/api/conversations/${id}`, { method: "DELETE" });
   };
+
+  const pinned = conversations
+    .filter((c) => c.pinned)
+    .sort((a, b) => new Date(b.pinned_at!).getTime() - new Date(a.pinned_at!).getTime());
+
+  const recents = conversations
+    .filter((c) => !c.pinned)
+    .sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime());
+
+  const itemProps = (conv: Conversation) => ({
+    conv,
+    isActive: conv.id === activeChatId,
+    renamingId,
+    renameValue,
+    onSelect: () => onSelectChat(conv.id),
+    onRenameStart: handleRenameStart,
+    onRenameChange: setRenameValue,
+    onRenameCommit: handleRenameCommit,
+    onRenameKeyDown: handleRenameKeyDown,
+    onPin: handlePin,
+    onDelete: handleDelete,
+  });
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -104,57 +273,42 @@ export function ChatHistory({
 
         <div className="flex-1 min-h-0 overflow-y-auto px-2 pb-4">
           {loading ? (
-            <p className="px-2 py-4 text-sm text-muted-foreground">
-              Loading...
-            </p>
+            <p className="px-2 py-4 text-sm text-muted-foreground">Loading...</p>
           ) : conversations.length === 0 ? (
-            <p className="px-2 py-4 text-sm text-muted-foreground">
-              No conversations yet
-            </p>
+            <p className="px-2 py-4 text-sm text-muted-foreground">No conversations yet</p>
           ) : (
-            conversations.map((conv) => (
-              <button
-                key={conv.id}
-                onClick={() => onSelectChat(conv.id)}
-                className={cn(
-                  "group w-full text-left px-3 py-2 rounded-md text-sm",
-                  "transition-colors flex items-center",
-                  conv.id === activeChatId
-                    ? "bg-accent text-accent-foreground"
-                    : "hover:bg-accent/50"
-                )}
-              >
-                <div className="min-w-0 flex-1">
-                  <p className="truncate font-medium">{conv.title}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {formatRelativeDate(conv.updated_at)}
-                  </p>
-                </div>
-                <div className="shrink-0 ml-2 items-center gap-0.5 hidden group-hover:flex">
+            <>
+              {pinned.length > 0 && (
+                <div className="mb-4">
                   <button
-                    onClick={(e) => handleCopyId(e, conv.id)}
-                    className={cn(
-                      "p-1 rounded transition-all active:scale-[0.97]",
-                      copiedId === conv.id
-                        ? "bg-emerald-500/10 text-emerald-600"
-                        : "text-muted-foreground hover:bg-accent hover:text-foreground"
-                    )}
+                    onClick={() => setPinnedOpen((v) => !v)}
+                    className="flex items-center gap-1 w-full px-3 py-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
                   >
-                    {copiedId === conv.id ? (
-                      <Check className="h-3.5 w-3.5 animate-in zoom-in-0 duration-150" />
-                    ) : (
-                      <Copy className="h-3.5 w-3.5" />
-                    )}
+                    <Pin className="h-3 w-3" />
+                    Pinned
+                    <ChevronDown className={cn("h-3 w-3 transition-transform", !pinnedOpen && "-rotate-90")} />
                   </button>
-                  <button
-                    onClick={(e) => handleDelete(e, conv.id)}
-                    className="p-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-all active:scale-[0.97]"
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </button>
+                  {pinnedOpen && pinned.map((conv) => (
+                    <ConversationItem key={conv.id} {...itemProps(conv)} />
+                  ))}
                 </div>
-              </button>
-            ))
+              )}
+              {recents.length > 0 && (
+                <div>
+                  <button
+                    onClick={() => setRecentsOpen((v) => !v)}
+                    className="flex items-center gap-1 w-full px-3 py-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    <Clock className="h-3 w-3" />
+                    Recents
+                    <ChevronDown className={cn("h-3 w-3 transition-transform", !recentsOpen && "-rotate-90")} />
+                  </button>
+                  {recentsOpen && recents.map((conv) => (
+                    <ConversationItem key={conv.id} {...itemProps(conv)} />
+                  ))}
+                </div>
+              )}
+            </>
           )}
         </div>
 

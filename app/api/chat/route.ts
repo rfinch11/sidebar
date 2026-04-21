@@ -289,12 +289,12 @@ export async function POST(req: Request) {
             const { text: title } = await generateText({
               model: anthropic("claude-haiku-4-5-20251001"),
               maxOutputTokens: 20,
-              prompt: `Generate a short title (3-6 words, no quotes, no period) for this conversation:\nUser: ${userText}\nAssistant: ${text.substring(0, 200)}`,
+              prompt: `Generate a short title (3-6 words, no quotes, no period, no hashtags) for this conversation:\nUser: ${userText}\nAssistant: ${text.substring(0, 200)}`,
             });
 
             await supabaseAdmin
               .from("conversations")
-              .update({ title: title.trim().substring(0, 100) })
+              .update({ title: title.trim().replace(/^#+\s*/, "").substring(0, 100) })
               .eq("id", conversationId);
           } catch {
             // Non-fatal: conversation keeps default title
