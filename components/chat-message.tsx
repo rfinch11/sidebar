@@ -75,7 +75,7 @@ const mdComponents = {
           href={href}
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex items-center gap-0.5 no-underline rounded bg-muted px-1 py-0.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground cursor-pointer"
+          className="inline-flex items-center gap-0.5 no-underline rounded bg-background px-1 py-0.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground cursor-pointer"
           onClick={(e) => {
             e.preventDefault();
             window.open(href, "_blank", "noopener,noreferrer");
@@ -87,7 +87,7 @@ const mdComponents = {
       );
     }
     return (
-      <span className="inline-flex items-center gap-0.5 rounded bg-muted px-1 py-0.5 text-xs font-medium text-muted-foreground">
+      <span className="inline-flex items-center gap-0.5 rounded bg-muted px-1 py-0.5 text-sm font-medium text-muted-foreground">
         <BookOpen className="inline h-3 w-3 shrink-0" />
         {children}
       </span>
@@ -109,7 +109,7 @@ export function ChatMessage({ role, content, messageIndex, isStreaming }: ChatMe
           className={cn(
             "prose dark:prose-invert max-w-none",
             isUser &&
-              "inline-block rounded-lg bg-secondary dark:bg-zinc-800 px-3 py-2 text-secondary-foreground dark:text-foreground text-left prose-p:text-secondary-foreground dark:prose-p:text-foreground prose-strong:text-secondary-foreground dark:prose-strong:text-foreground"
+              "inline-block rounded-lg bg-secondary dark:bg-zinc-800 px-3 py-2 text-muted-foreground dark:text-foreground text-left prose-p:text-muted-foreground dark:prose-p:text-foreground prose-strong:text-muted-foreground dark:prose-strong:text-foreground"
           )}
         >
           {isUser ? (
