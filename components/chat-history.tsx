@@ -309,8 +309,8 @@ export function ChatHistory({
     return (
       <aside
         className={cn(
-          "relative z-10 flex-shrink-0 flex flex-col p-2 overflow-hidden transition-[width] duration-300 ease-out drop-shadow-md",
-          open ? "w-[19rem]" : "w-0"
+          "relative z-10 flex-shrink-0 flex flex-col p-2 overflow-hidden transition-[width] duration-300 ease-out",
+          open ? "w-[19rem] drop-shadow-md" : "w-0 invisible"
         )}
       >
         <div className="w-72 flex flex-col flex-1 min-h-0 rounded-xl border border-border/60 bg-background overflow-hidden">
