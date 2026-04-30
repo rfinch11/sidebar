@@ -39,7 +39,19 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className="dark" suppressHydrationWarning>
+    <html lang="en" suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: `
+          try {
+            var t = localStorage.getItem('sidebar-theme') || 'dusk';
+            var n = localStorage.getItem('sidebar-noise') || '0';
+            document.documentElement.dataset.theme = t;
+            document.documentElement.style.setProperty('--noise-opacity', n);
+          } catch(e) {
+            document.documentElement.dataset.theme = 'dusk';
+          }
+        `}} />
+      </head>
       <body className={`${hyperlegibleSans.className} min-h-dvh antialiased`}>
         {children}
       </body>

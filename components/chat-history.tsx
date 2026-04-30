@@ -103,10 +103,10 @@ function ConversationItem({
             className="w-full bg-transparent outline-none font-medium text-sm truncate"
           />
         ) : (
-          <p className="truncate text-sm text-muted-foreground">{conv.title}</p>
+          <p className="truncate text-sm">{conv.title}</p>
         )}
         {!isRenaming && (
-          <p className="text-xs text-muted-foreground">
+          <p className="text-xs text-muted-foreground/60">
             {formatRelativeDate(conv.updated_at)}
           </p>
         )}

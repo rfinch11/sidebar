@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -23,10 +23,10 @@ import {
 } from "@/components/ui/alert-dialog";
 import { User, Plus } from "lucide-react";
 import { LibraryIcon } from "@/components/ui/library-icon";
-import { SunIcon } from "@/components/ui/sun-icon";
-import { MoonIcon } from "@/components/ui/moon-icon";
 import { LogOutIcon } from "@/components/ui/logout-icon";
 import { TrashIcon } from "@/components/ui/trash-icon";
+import { ThemePicker } from "@/components/theme-picker";
+import { DropdownMenuLabel } from "@/components/ui/dropdown-menu";
 import Link from "next/link";
 
 interface ProfileMenuProps {
@@ -36,22 +36,6 @@ interface ProfileMenuProps {
 export function ProfileMenu({ initials }: ProfileMenuProps) {
   const router = useRouter();
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-  const [isDark, setIsDark] = useState(true);
-
-  useEffect(() => {
-    setIsDark(document.documentElement.classList.contains("dark"));
-  }, []);
-
-  const toggleTheme = () => {
-    const html = document.documentElement;
-    if (html.classList.contains("dark")) {
-      html.classList.remove("dark");
-      setIsDark(false);
-    } else {
-      html.classList.add("dark");
-      setIsDark(true);
-    }
-  };
 
   const handleSignOut = async () => {
     const supabase = createClient();
@@ -93,14 +77,11 @@ export function ProfileMenu({ initials }: ProfileMenuProps) {
               Browse sources
             </Link>
           </DropdownMenuItem>
-          <DropdownMenuItem onClick={toggleTheme} className="group/theme text-base sm:text-sm px-3 py-3 sm:px-2 sm:py-2.5">
-            {isDark ? (
-              <SunIcon className="mr-2 h-4 w-4" />
-            ) : (
-              <MoonIcon className="mr-2 h-4 w-4" />
-            )}
-            {isDark ? "Light mode" : "Dark mode"}
-          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuLabel className="text-xs font-normal text-muted-foreground px-3 py-1 sm:px-2">
+            Appearance
+          </DropdownMenuLabel>
+          <ThemePicker />
           <DropdownMenuSeparator />
           <DropdownMenuItem onClick={handleSignOut} className="group/signout text-base sm:text-sm px-3 py-3 sm:px-2 sm:py-2.5">
             <LogOutIcon className="mr-2 h-4 w-4" />

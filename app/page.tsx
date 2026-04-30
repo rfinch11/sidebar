@@ -45,12 +45,6 @@ function SourceRolodex() {
     </p>
   );
 }
-import dynamic from "next/dynamic";
-
-const LightRays = dynamic(
-  () => import("@/components/light-rays").then((m) => ({ default: m.LightRays })),
-  { ssr: false }
-);
 
 function getMessageText(message: { parts: Array<{ type: string; text?: string }> }): string {
   return message.parts
@@ -268,8 +262,21 @@ export default function Home() {
     if (window.innerWidth < 768) setSidebarOpen(false);
   }, []);
 
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === "n" && window.innerWidth >= 768) {
+        e.preventDefault();
+        onNewChat();
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [onNewChat]);
+
   return (
-    <div className="isolate flex h-dvh">
+    <div className="isolate relative flex h-dvh bg-background">
+      {/* Noise texture — covers full background, below all UI */}
+      <div className="noise-bg" style={{ zIndex: -1 }} />
       <ChatHistory
         open={sidebarOpen}
         onOpenChange={setSidebarOpen}
@@ -277,23 +284,7 @@ export default function Home() {
         onSelectChat={onSelectChat}
         onNewChat={onNewChat}
       />
-      <div className="relative flex flex-1 flex-col min-w-0 bg-background">
-      {/* Background light rays */}
-      <div className="absolute inset-0 -z-10 pointer-events-none opacity-60">
-        <LightRays
-          raysOrigin="top-left"
-          raysColor="#6b8ef0"
-          raysSpeed={0.7}
-          lightSpread={0.65}
-          rayLength={1.6}
-          fadeDistance={1.9}
-          saturation={0.5}
-          followMouse={true}
-          mouseInfluence={0.08}
-          noiseAmount={0.05}
-          distortion={0.03}
-        />
-      </div>
+      <div className="relative flex flex-1 flex-col min-w-0">
       {/* Header */}
       <header className="flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4 pt-[max(0.75rem,env(safe-area-inset-top))]">
         <div className="flex items-center gap-0">
