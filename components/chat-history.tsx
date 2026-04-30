@@ -167,12 +167,21 @@ export function ChatHistory({
   onSelectChat,
   onNewChat,
 }: ChatHistoryProps) {
+  const [isDesktop, setIsDesktop] = useState(false);
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [loading, setLoading] = useState(false);
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState("");
   const [pinnedOpen, setPinnedOpen] = useState(true);
   const [recentsOpen, setRecentsOpen] = useState(true);
+
+  useEffect(() => {
+    const mq = window.matchMedia("(min-width: 768px)");
+    setIsDesktop(mq.matches);
+    const handler = (e: MediaQueryListEvent) => setIsDesktop(e.matches);
+    mq.addEventListener("change", handler);
+    return () => mq.removeEventListener("change", handler);
+  }, []);
 
   useEffect(() => {
     if (!open) return;
@@ -246,76 +255,104 @@ export function ChatHistory({
     onDelete: handleDelete,
   });
 
+  const conversationList = (
+    <div className="flex-1 min-h-0 overflow-y-auto px-2 pb-4">
+      {loading ? (
+        <p className="px-2 py-4 text-sm text-muted-foreground">Loading...</p>
+      ) : conversations.length === 0 ? (
+        <p className="px-2 py-4 text-sm text-muted-foreground">No conversations yet</p>
+      ) : (
+        <>
+          {pinned.length > 0 && (
+            <div className="mb-4">
+              <button
+                onClick={() => setPinnedOpen((v) => !v)}
+                className="flex items-center gap-1 w-full px-3 py-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <Pin className="h-3 w-3" />
+                Pinned
+                <ChevronDown className={cn("h-3 w-3 transition-transform", !pinnedOpen && "-rotate-90")} />
+              </button>
+              {pinnedOpen && pinned.map((conv) => (
+                <ConversationItem key={conv.id} {...itemProps(conv)} />
+              ))}
+            </div>
+          )}
+          {recents.length > 0 && (
+            <div>
+              <button
+                onClick={() => setRecentsOpen((v) => !v)}
+                className="flex items-center gap-1 w-full px-3 py-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <Clock className="h-3 w-3" />
+                Recents
+                <ChevronDown className={cn("h-3 w-3 transition-transform", !recentsOpen && "-rotate-90")} />
+              </button>
+              {recentsOpen && recents.map((conv) => (
+                <ConversationItem key={conv.id} {...itemProps(conv)} />
+              ))}
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  );
+
+  const footer = (
+    <div className="px-4 pt-3 pb-[max(1.5rem,env(safe-area-inset-bottom))] border-t border-border/50 text-[11px] text-muted-foreground/60">
+      <p className="font-medium mb-1">Active models</p>
+      <p>Claude Sonnet 4.5 · Claude Haiku 4.5 · Voyage 3</p>
+    </div>
+  );
+
+  if (isDesktop) {
+    return (
+      <aside
+        className={cn(
+          "flex-shrink-0 flex flex-col p-2 overflow-hidden transition-[width] duration-300 ease-out",
+          open ? "w-[19rem]" : "w-0"
+        )}
+      >
+        <div className="w-72 flex flex-col flex-1 min-h-0 rounded-xl border border-border/60 bg-background overflow-hidden">
+          <div className="p-4 pt-[max(1rem,env(safe-area-inset-top))] flex flex-row items-center justify-between">
+            <h2 className="font-semibold">History</h2>
+            <Button variant="ghost" size="icon" className="h-10 w-10" onClick={() => onOpenChange(false)}>
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+          </div>
+          <div className="px-4 pb-4">
+            <Button variant="outline" className="w-full" onClick={onNewChat}>
+              <Plus className="mr-2 h-4 w-4" />
+              New chat
+            </Button>
+          </div>
+          {conversationList}
+          {footer}
+        </div>
+      </aside>
+    );
+  }
+
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent side="left" className="w-[80%] max-w-80 p-0 flex flex-col !gap-0 rounded-r-xl" showCloseButton={false}>
         <SheetHeader className="p-4 pb-4 pt-[max(1rem,env(safe-area-inset-top))] flex-row items-center justify-between">
           <SheetTitle>History</SheetTitle>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-10 w-10"
-            onClick={() => onOpenChange(false)}
-          >
+          <Button variant="ghost" size="icon" className="h-10 w-10" onClick={() => onOpenChange(false)}>
             <ChevronLeft className="h-4 w-4" />
           </Button>
           <SheetDescription className="sr-only">
             Past conversations
           </SheetDescription>
         </SheetHeader>
-
         <div className="px-4 pb-4">
           <Button variant="outline" className="w-full" onClick={onNewChat}>
             <Plus className="mr-2 h-4 w-4" />
             New chat
           </Button>
         </div>
-
-        <div className="flex-1 min-h-0 overflow-y-auto px-2 pb-4">
-          {loading ? (
-            <p className="px-2 py-4 text-sm text-muted-foreground">Loading...</p>
-          ) : conversations.length === 0 ? (
-            <p className="px-2 py-4 text-sm text-muted-foreground">No conversations yet</p>
-          ) : (
-            <>
-              {pinned.length > 0 && (
-                <div className="mb-4">
-                  <button
-                    onClick={() => setPinnedOpen((v) => !v)}
-                    className="flex items-center gap-1 w-full px-3 py-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
-                  >
-                    <Pin className="h-3 w-3" />
-                    Pinned
-                    <ChevronDown className={cn("h-3 w-3 transition-transform", !pinnedOpen && "-rotate-90")} />
-                  </button>
-                  {pinnedOpen && pinned.map((conv) => (
-                    <ConversationItem key={conv.id} {...itemProps(conv)} />
-                  ))}
-                </div>
-              )}
-              {recents.length > 0 && (
-                <div>
-                  <button
-                    onClick={() => setRecentsOpen((v) => !v)}
-                    className="flex items-center gap-1 w-full px-3 py-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
-                  >
-                    <Clock className="h-3 w-3" />
-                    Recents
-                    <ChevronDown className={cn("h-3 w-3 transition-transform", !recentsOpen && "-rotate-90")} />
-                  </button>
-                  {recentsOpen && recents.map((conv) => (
-                    <ConversationItem key={conv.id} {...itemProps(conv)} />
-                  ))}
-                </div>
-              )}
-            </>
-          )}
-        </div>
-
-        <div className="px-4 pt-3 pb-[max(1.5rem,env(safe-area-inset-bottom))] border-t border-border/50 text-[11px] text-muted-foreground/60">
-          <p className="font-medium mb-1">Active models</p>
-          <p>Claude Sonnet 4.5 · Claude Haiku 4.5 · Voyage 3</p>
-        </div>
+        {conversationList}
+        {footer}
       </SheetContent>
     </Sheet>
   );

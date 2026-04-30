@@ -1,7 +1,7 @@
 "use client";
 
 import { useChat } from "@ai-sdk/react";
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useLayoutEffect, useCallback } from "react";
 import { ChatMessage } from "@/components/chat-message";
 import { ChatInput } from "@/components/chat-input";
 import { ChatHistory } from "@/components/chat-history";
@@ -39,7 +39,7 @@ function SourceRolodex() {
   return (
     <p
       key={index}
-      className="max-w-sm text-sm text-muted-foreground animate-fade-in duration-500"
+      className="max-w-sm text-sm leading-5 text-center text-muted-foreground animate-fade-in duration-500 line-clamp-3"
     >
       &ldquo;{excerpts[index]}&rdquo;
     </p>
@@ -70,6 +70,11 @@ export default function Home() {
   const [activeChatId, setActiveChatId] = useState(getInitialChatId);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  // Open sidebar by default on desktop after hydration
+  useEffect(() => {
+    if (window.innerWidth >= 768) setSidebarOpen(true);
+  }, []);
   const [pendingLoadId, setPendingLoadId] = useState<string | null>(() => {
     if (typeof window !== "undefined") {
       return sessionStorage.getItem("activeChatId");
@@ -171,6 +176,34 @@ export default function Home() {
   }, [messages, isLoading]);
 
   const [stepIndex, setStepIndex] = useState(-1);
+  const isEmpty = messages.length === 0;
+  const inputGroupRef = useRef<HTMLDivElement>(null);
+  const [centeredOffset, setCenteredOffset] = useState(0);
+  const [transitionReady, setTransitionReady] = useState(false);
+
+  // Measure how far to translate the input group upward to center it in the viewport.
+  // Runs synchronously before paint so there's no visible flash on initial load.
+  useLayoutEffect(() => {
+    const measure = () => {
+      const el = inputGroupRef.current;
+      if (!el) return;
+      const vh = window.innerHeight;
+      // Element sits at bottom:0; its vertical center is at vh - height/2 from top.
+      // Target: center of the group lands at 48% of viewport (leaves room for header).
+      const targetCenter = vh * 0.48;
+      const currentCenter = vh - el.offsetHeight / 2;
+      setCenteredOffset(Math.max(0, currentCenter - targetCenter));
+    };
+    measure();
+    window.addEventListener("resize", measure);
+    return () => window.removeEventListener("resize", measure);
+  }, []);
+
+  // Enable the CSS transition only after mount so the initial centering snap is instant.
+  useEffect(() => {
+    const id = requestAnimationFrame(() => setTransitionReady(true));
+    return () => cancelAnimationFrame(id);
+  }, []);
 
   const getUserMessageElements = () =>
     Array.from(scrollRef.current?.querySelectorAll<HTMLElement>("[data-user-msg]") ?? []);
@@ -227,16 +260,24 @@ export default function Home() {
   const onSelectChat = useCallback((id: string) => {
     setActiveChatId(id);
     setPendingLoadId(id);
-    setSidebarOpen(false);
+    if (window.innerWidth < 768) setSidebarOpen(false);
   }, []);
 
   const onNewChat = useCallback(() => {
     setActiveChatId(crypto.randomUUID());
-    setSidebarOpen(false);
+    if (window.innerWidth < 768) setSidebarOpen(false);
   }, []);
 
   return (
-    <div className="isolate relative flex h-dvh flex-col bg-background">
+    <div className="isolate flex h-dvh">
+      <ChatHistory
+        open={sidebarOpen}
+        onOpenChange={setSidebarOpen}
+        activeChatId={activeChatId}
+        onSelectChat={onSelectChat}
+        onNewChat={onNewChat}
+      />
+      <div className="relative flex flex-1 flex-col min-w-0 bg-background">
       {/* Background light rays */}
       <div className="absolute inset-0 -z-10 pointer-events-none opacity-60">
         <LightRays
@@ -272,16 +313,7 @@ export default function Home() {
       {/* Messages */}
       <div ref={scrollRef} className="flex-1 overflow-y-auto">
         <div className="mx-auto max-w-3xl px-4 sm:px-6">
-          {messages.length === 0 ? (
-            <div className="flex h-full min-h-[60dvh] flex-col items-center justify-center text-center">
-              <div className="relative flex flex-col items-center">
-                <h1 className="text-xl font-semibold">Your personal advisor</h1>
-                <div className="absolute top-full mt-3 w-screen max-w-sm px-4">
-                  <SourceRolodex />
-                </div>
-              </div>
-            </div>
-          ) : (
+          {messages.length > 0 && (
             <div className="py-4 pb-32">
               {messages.map((message, i) => (
                 <ChatMessage
@@ -302,8 +334,24 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Input — floating overlay pinned to bottom */}
-      <div className="absolute bottom-0 inset-x-0 z-10 pointer-events-none">
+      {/* Input group — centered when empty, pinned to bottom when chatting */}
+      <div
+        ref={inputGroupRef}
+        className={`absolute inset-x-0 bottom-0 z-10 pointer-events-none${transitionReady ? " transition-transform duration-[480ms] ease-[cubic-bezier(0.33,1,0.68,1)]" : ""}`}
+        style={{ transform: `translateY(${isEmpty ? -centeredOffset : 0}px)` }}
+      >
+        {/* Greeting — fades out with messages */}
+        <div
+          className={`overflow-hidden transition-[opacity,max-height,padding] duration-300 ease-out${isEmpty ? " opacity-100 max-h-[220px] pb-6" : " opacity-0 max-h-0 pb-0"}`}
+        >
+          <h1 className="text-xl font-semibold text-center">Your personal advisor</h1>
+          <div className="mt-3 flex justify-center px-4">
+            <div className="h-[3.75rem] max-w-sm w-full flex items-center justify-center">
+              <SourceRolodex />
+            </div>
+          </div>
+        </div>
+
         {/* Chat steppers */}
         {!isAtBottom && messages.length > 0 && (
           <div className="flex justify-center mb-2 pointer-events-auto">
@@ -325,6 +373,7 @@ export default function Home() {
             </div>
           </div>
         )}
+
         <div className="mx-auto max-w-3xl px-4 sm:px-6 pb-[max(0.75rem,env(safe-area-inset-bottom))] pointer-events-auto">
           <ChatInput
             value={input}
@@ -336,15 +385,7 @@ export default function Home() {
           />
         </div>
       </div>
-
-      {/* Chat history sidebar */}
-      <ChatHistory
-        open={sidebarOpen}
-        onOpenChange={setSidebarOpen}
-        activeChatId={activeChatId}
-        onSelectChat={onSelectChat}
-        onNewChat={onNewChat}
-      />
+      </div>
     </div>
   );
 }
